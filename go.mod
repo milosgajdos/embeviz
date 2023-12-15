@@ -1,3 +1,3 @@
-module github.com/milosgajdos/go-repo-template
+module github.com/milosgajdos/embeviz
 
 go 1.20

@@ -13,3 +13,31 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+embeviz
+
+# dependencies
+**/node_modules
+**/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+i**/.next/
+**/out/
+
+# production
+**/build
+
+# misc
+.DS_Store
+*.pem
+
+# local env files
+**/.env*.local
+**/.env
+
+# typescript
+**/*.tsbuildinfo
+**/.env
