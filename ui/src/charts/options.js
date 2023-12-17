@@ -71,18 +71,17 @@ const defaultSeriesOptions = {
   },
 };
 
-export function makeSeries(dim, name, data) {
+export function makeSeries(name, dim, data) {
   return {
     ...defaultSeriesOptions[dim],
     name: name,
     data: data,
-    tooltip: defaultToolTip,
   };
 }
 
-export function getChartOption(dim, series) {
+export function getChartOption(name, dim, embeddings) {
   return {
     ...defaultChartOptions[dim],
-    series: series,
+    series: makeSeries(name, dim, embeddings),
   };
 }

@@ -2,9 +2,9 @@ import ReactECharts from "echarts-for-react";
 import "echarts-gl";
 import { getChartOption } from "./options";
 
-export default function EChart({ dim, isLoading, series, styling }) {
+export default function EChart({ name, dim, isLoading, embeddings, styling }) {
   // TODO: should this be a hook?
-  const option = getChartOption(dim, series);
+  const option = getChartOption(name, dim, embeddings);
   return (
     <ReactECharts
       notMerge
