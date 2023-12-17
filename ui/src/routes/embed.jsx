@@ -1,4 +1,6 @@
 import { Form, useLoaderData, redirect } from "react-router-dom";
+import ReactECharts from "echarts-for-react";
+import "echarts-gl";
 import { useState } from "react";
 import { getProvider, updateData } from "../embeddings";
 
@@ -10,12 +12,14 @@ export async function loader({ params }) {
       statusText: "Not Found",
     });
   }
+  console.log(provider);
   return { provider };
 }
 
 export async function action({ request, params }) {
   const formData = await request.formData();
   const updates = Object.fromEntries(formData);
+  console.log(updates);
   const newData = await updateData(params.id, updates);
   console.log(`new data: ${newData}`);
   return redirect(`/provider/${params.id}`);
@@ -23,22 +27,120 @@ export async function action({ request, params }) {
 
 export default function Embed() {
   const { provider } = useLoaderData();
-  /* we should allow reset stored data*/
+
   return (
-    <>
-      <div id="embed">
+    <div id="embed">
+      <div>
         <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
         {provider.description && <p>{provider.description}</p>}
-        <div>
-          <img key={provider.avatar} src={provider.avatar || null} />
+        <div id="charts">
+          <EChart3D series={provider.data["3d"]} />
+          <EChart2D series={provider.data["2d"]} />
         </div>
       </div>
-      <UpdateData />
-    </>
+      <UpdateDataForm />
+    </div>
   );
 }
 
-export function UpdateData() {
+function EChart3D({ series }) {
+  const option = {
+    animation: true,
+    legend: { show: true, type: "" },
+    grid3D: {},
+    xAxis3D: {},
+    yAxis3D: {},
+    zAxis3D: {},
+    toolbox: {
+      show: true,
+      orient: "horizontal",
+      left: "right",
+      feature: {
+        saveAsImage: {
+          show: true,
+          title: "Save as image",
+        },
+        brush: null,
+        restore: {
+          show: true,
+          title: "Reset",
+        },
+      },
+    },
+    tooltip: {
+      show: true,
+      formatter: "{a}",
+    },
+
+    series: [
+      {
+        name: "Sample 3D data",
+        type: "scatter3D",
+        symbolSize: 5,
+        smooth: false,
+        connectNulls: false,
+        showSymbol: false,
+        waveAnimation: false,
+        coordinateSystem: "cartesian3D",
+        renderLabelForZeroData: false,
+        data: series,
+        itemStyle: {
+          opacity: 1,
+        },
+      },
+    ],
+  };
+  return <ReactECharts option={option} style={{ height: 300, width: 300 }} />;
+}
+
+function EChart2D({ series }) {
+  const option = {
+    animation: true,
+    legend: { show: true, type: "" },
+    xAxis: [{}],
+    yAxis: [{}],
+    toolbox: {
+      show: true,
+      orient: "horizontal",
+      left: "right",
+      feature: {
+        saveAsImage: {
+          show: true,
+          title: "Save as image",
+        },
+        brush: null,
+        restore: {
+          show: true,
+          title: "Reset",
+        },
+      },
+    },
+    tooltip: {
+      show: true,
+      formatter: "{a}",
+    },
+
+    series: [
+      {
+        name: "Sample 2D data",
+        type: "scatter",
+        symbolSize: 5,
+        smooth: false,
+        connectNulls: false,
+        showSymbol: false,
+        waveAnimation: false,
+        renderLabelForZeroData: false,
+        data: series,
+        itemStyle: {
+          opacity: 1,
+        },
+      },
+    ],
+  };
+  return <ReactECharts option={option} style={{ height: 300, width: 300 }} />;
+}
+
+export function UpdateDataForm() {
   const [proj, setProj] = useState("pca");
 
   function handleProjChange(e) {

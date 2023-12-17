@@ -8,7 +8,18 @@ const globalData = new Map([
     {
       name: "OpenAI",
       description: "OpenAI Embeddings",
-      data: {},
+      data: {
+        "2d": [
+          [0.5, 0.6],
+          [0.1, 0.2],
+          [0.4, 0.1],
+        ],
+        "3d": [
+          [0.4, 0.1, 0.3],
+          [0.2, 0.1, 0.1],
+          [0.1, 0.1, 0.2],
+        ],
+      },
     },
   ],
   [
@@ -16,7 +27,18 @@ const globalData = new Map([
     {
       name: "VertexAI",
       description: "VertexAI Embeddings",
-      data: {},
+      data: {
+        "2d": [
+          [0.43, 0.77],
+          [0.21, 0.33],
+          [0.42, 0.78],
+        ],
+        "3d": [
+          [0.234, 0.144, 0.453],
+          [0.4442, 0.661, 0.51],
+          [0.22, 0.11, 0.82],
+        ],
+      },
     },
   ],
 ]);
@@ -44,7 +66,16 @@ export async function updateData(id, updates) {
   await fakeNetwork();
   let provider = globalData.get(id);
   if (!provider) throw new Error("No contact found for", id);
-  globalData.set(id, { name: provider.name, data: updates });
+  globalData.set(id, {
+    name: provider.name,
+    description: provider.description,
+    data: {
+      "2d": [[...provider.data["2d"], [Math.random(), Math.random()]]],
+      "3d": [
+        [...provider.data["2d"], [Math.random(), Math.random(), Math.random()]],
+      ],
+    },
+  });
   return new Map(globalData);
 }
 

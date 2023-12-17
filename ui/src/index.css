@@ -262,6 +262,7 @@ i {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 2rem;
   max-width: 40rem;
 }
 
@@ -280,6 +281,7 @@ i {
 #embed-form {
   display: flex;
   gap: 2rem;
+  padding-top: 20px;
   padding-bottom: 20px;
 }
 
@@ -295,6 +297,12 @@ i {
 
 #embed h1 + p + p {
   white-space: break-spaces;
+}
+
+#charts {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 20px;
 }
 
 /* #embed img {
