@@ -1,22 +1,61 @@
 import localforage from "localforage";
 import { matchSorter } from "match-sorter";
 import sortBy from "sort-by";
+import { makeSeries } from "./charts/options";
 
 const globalData = new Map([
   [
-    "1",
+    "openai",
     {
       name: "OpenAI",
       description: "OpenAI Embeddings",
-      data: {},
+      embeddings: {
+        "2D": [
+          [0.5, 0.6],
+          [0.1, 0.2],
+          [0.4, 0.1],
+        ].map((item, index) =>
+          makeSeries("2D", "2D series", [
+            { name: `Item${index + 1}`, value: item },
+          ])
+        ),
+        "3D": [
+          [0.5, 0.6, 0.3],
+          [0.1, 0.2, 0.1],
+          [0.4, 0.1, 0.2],
+        ].map((item, index) =>
+          makeSeries("3D", "3D series", [
+            { name: `Item${index + 1}`, value: item },
+          ])
+        ),
+      },
     },
   ],
   [
-    "2",
+    "vertexai",
     {
       name: "VertexAI",
       description: "VertexAI Embeddings",
-      data: {},
+      embeddings: {
+        "2D": [
+          [0.43, 0.77],
+          [0.21, 0.33],
+          [0.32, 0.68],
+        ].map((item, index) =>
+          makeSeries("2D", "2D series", [
+            { name: `Item${index + 1}`, value: item },
+          ])
+        ),
+        "3D": [
+          [0.43, 0.77, 0.453],
+          [0.21, 0.33, 0.51],
+          [0.42, 0.78, 0.62],
+        ].map((item, index) =>
+          makeSeries("3D", "3D series", [
+            { name: `Item${index + 1}`, value: item },
+          ])
+        ),
+      },
     },
   ],
 ]);
@@ -41,10 +80,34 @@ export async function getProvider(id) {
 }
 
 export async function updateData(id, updates) {
+  const { meta, text, projection } = updates;
   await fakeNetwork();
   let provider = globalData.get(id);
   if (!provider) throw new Error("No contact found for", id);
-  globalData.set(id, { name: provider.name, data: updates });
+  globalData.set(id, {
+    name: provider.name,
+    description: provider.description,
+    embeddings: {
+      "2D": [
+        ...provider.embeddings["2D"],
+        makeSeries("2D", "2D series", [
+          {
+            name: meta ? meta : "N/A",
+            value: [Math.random(), Math.random()],
+          },
+        ]),
+      ],
+      "3D": [
+        ...provider.embeddings["3D"],
+        makeSeries("3D", "3D series", [
+          {
+            name: meta ? meta : "N/A",
+            value: [Math.random(), Math.random(), Math.random()],
+          },
+        ]),
+      ],
+    },
+  });
   return new Map(globalData);
 }
 

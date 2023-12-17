@@ -1,6 +1,9 @@
-import { Form, useLoaderData, redirect } from "react-router-dom";
+import { Form, useLoaderData, useNavigation, redirect } from "react-router-dom";
+import ReactECharts from "echarts-for-react";
+import "echarts-gl";
 import { useState } from "react";
 import { getProvider, updateData } from "../embeddings";
+import EChart from "../charts/charts";
 
 export async function loader({ params }) {
   const provider = await getProvider(params.id);
@@ -10,12 +13,14 @@ export async function loader({ params }) {
       statusText: "Not Found",
     });
   }
+  console.log(provider);
   return { provider };
 }
 
 export async function action({ request, params }) {
   const formData = await request.formData();
   const updates = Object.fromEntries(formData);
+  console.log(updates);
   const newData = await updateData(params.id, updates);
   console.log(`new data: ${newData}`);
   return redirect(`/provider/${params.id}`);
@@ -23,39 +28,56 @@ export async function action({ request, params }) {
 
 export default function Embed() {
   const { provider } = useLoaderData();
-  /* we should allow reset stored data*/
+  const navigation = useNavigation();
+
   return (
     <>
       <div id="embed">
-        <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
-        {provider.description && <p>{provider.description}</p>}
         <div>
-          <img key={provider.avatar} src={provider.avatar || null} />
+          <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
+          {provider.description && <p>{provider.description}</p>}
+          <div id="charts">
+            <EChart
+              dim="3D"
+              isLoading={navigation.state === "loading"}
+              series={provider.embeddings["3D"]}
+              styling={{ height: 300, width: 300 }}
+            />
+            <EChart
+              dim="2D"
+              isLoading={navigation.state === "loading"}
+              series={provider.embeddings["2D"]}
+              styling={{ height: 300, width: 300 }}
+            />
+          </div>
         </div>
       </div>
-      <UpdateData />
+      <UpdateDataForm />
     </>
   );
 }
 
-export function UpdateData() {
-  const [proj, setProj] = useState("pca");
+export function UpdateDataForm() {
+  const [projection, setProjection] = useState("pca");
 
-  function handleProjChange(e) {
-    setProj(e.target.value);
+  function handleProjectionChange(e) {
+    setProjection(e.target.value);
   }
 
   return (
     <Form action="update" method="post" id="embed-form">
-      <textarea
-        id="text"
-        name="text"
-        placeholder="Text"
-        rows="5"
-        cols="80"
-        wrap="soft"
-        required
-      ></textarea>
+      <div id="embed-form-text-options">
+        <input id="meta" name="meta" placeholder="Label" />
+        <textarea
+          id="text"
+          name="text"
+          placeholder="Text"
+          rows="5"
+          cols="80"
+          wrap="soft"
+          required
+        ></textarea>
+      </div>
       <div id="embed-options">
         <fieldset>
           <legend>Projection</legend>
@@ -63,10 +85,10 @@ export function UpdateData() {
             <input
               type="radio"
               id="pca"
-              name="proj"
+              name="projection"
               value="pca"
-              checked={proj === "pca"}
-              onChange={handleProjChange}
+              checked={projection === "pca"}
+              onChange={handleProjectionChange}
             />
             <label htmlFor="pca"> pca</label>
           </div>
@@ -74,10 +96,10 @@ export function UpdateData() {
             <input
               type="radio"
               id="tsne"
-              name="proj"
+              name="projection"
               value="tsne"
-              checked={proj === "tsne"}
-              onChange={handleProjChange}
+              checked={projection === "tsne"}
+              onChange={handleProjectionChange}
             />
             <label htmlFor="tsne"> t-sne</label>
           </div>
