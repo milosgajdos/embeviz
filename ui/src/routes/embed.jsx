@@ -1,6 +1,4 @@
 import { Form, useLoaderData, useNavigation, redirect } from "react-router-dom";
-import ReactECharts from "echarts-for-react";
-import "echarts-gl";
 import { useState } from "react";
 import { getProvider, updateData } from "../embeddings";
 import EChart from "../charts/charts";
@@ -38,15 +36,17 @@ export default function Embed() {
           {provider.description && <p>{provider.description}</p>}
           <div id="charts">
             <EChart
+              name="3D series"
               dim="3D"
               isLoading={navigation.state === "loading"}
-              series={provider.embeddings["3D"]}
+              embeddings={provider.embeddings["3D"]}
               styling={{ height: 300, width: 300 }}
             />
             <EChart
+              name="2D series"
               dim="2D"
               isLoading={navigation.state === "loading"}
-              series={provider.embeddings["2D"]}
+              embeddings={provider.embeddings["2D"]}
               styling={{ height: 300, width: 300 }}
             />
           </div>
