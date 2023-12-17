@@ -71,27 +71,11 @@ const defaultSeriesOptions = {
   },
 };
 
-export function addDataItem(series, item) {
-  return {
-    ...series,
-    data: [...series.data, item],
-  };
-}
-
-export function makeSeriesItem(name, value) {
-  return {
-    name: name,
-    value: value,
-  };
-}
-
 export function makeSeries(name, dim, data) {
   return {
     ...defaultSeriesOptions[dim],
     name: name,
-    data: data.map((item, index) => {
-      return { name: `Item${index + 1}`, value: item };
-    }),
+    data: data,
   };
 }
 

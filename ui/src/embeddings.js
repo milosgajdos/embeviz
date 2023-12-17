@@ -1,7 +1,6 @@
 import localforage from "localforage";
 import { matchSorter } from "match-sorter";
 import sortBy from "sort-by";
-import { makeSeries, makeSeriesItem, addDataItem } from "./charts/options";
 
 const globalData = new Map([
   [
@@ -14,12 +13,16 @@ const globalData = new Map([
           [0.5, 0.6],
           [0.1, 0.2],
           [0.4, 0.1],
-        ],
+        ].map((item, index) => {
+          return { name: `Item${index + 1}`, value: item };
+        }),
         "3D": [
           [0.5, 0.6, 0.3],
           [0.1, 0.2, 0.1],
           [0.4, 0.1, 0.2],
-        ],
+        ].map((item, index) => {
+          return { name: `Item${index + 1}`, value: item };
+        }),
       },
     },
   ],
@@ -33,12 +36,16 @@ const globalData = new Map([
           [0.43, 0.77],
           [0.21, 0.33],
           [0.32, 0.68],
-        ],
+        ].map((item, index) => {
+          return { name: `Item${index + 1}`, value: item };
+        }),
         "3D": [
           [0.43, 0.77, 0.453],
           [0.21, 0.33, 0.51],
           [0.42, 0.78, 0.62],
-        ],
+        ].map((item, index) => {
+          return { name: `Item${index + 1}`, value: item };
+        }),
       },
     },
   ],
@@ -72,10 +79,13 @@ export async function updateData(id, updates) {
     name: provider.name,
     description: provider.description,
     embeddings: {
-      "2D": [...provider.embeddings["2D"], [Math.random(), Math.random()]],
+      "2D": [
+        ...provider.embeddings["2D"],
+        { name: meta, value: [Math.random(), Math.random()] },
+      ],
       "3D": [
         ...provider.embeddings["3D"],
-        [Math.random(), Math.random(), Math.random()],
+        { name: meta, value: [Math.random(), Math.random(), Math.random()] },
       ],
     },
   });
