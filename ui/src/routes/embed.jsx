@@ -3,6 +3,7 @@ import ReactECharts from "echarts-for-react";
 import "echarts-gl";
 import { useState } from "react";
 import { getProvider, updateData } from "../embeddings";
+import EChart from "../charts/charts";
 
 export async function loader({ params }) {
   const provider = await getProvider(params.id);
@@ -36,13 +37,17 @@ export default function Embed() {
           <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
           {provider.description && <p>{provider.description}</p>}
           <div id="charts">
-            <EChart3D
+            <EChart
+              dim="3D"
               isLoading={navigation.state === "loading"}
-              series={provider.data["3D"]}
+              series={provider.embeddings["3D"]}
+              styling={{ height: 300, width: 300 }}
             />
-            <EChart2D
+            <EChart
+              dim="2D"
               isLoading={navigation.state === "loading"}
-              series={provider.data["2D"]}
+              series={provider.embeddings["2D"]}
+              styling={{ height: 300, width: 300 }}
             />
           </div>
         </div>
@@ -52,135 +57,27 @@ export default function Embed() {
   );
 }
 
-function EChart3D({ isLoading, series }) {
-  const option = {
-    animation: true,
-    legend: { show: true, type: "" },
-    grid3D: {},
-    xAxis3D: {},
-    yAxis3D: {},
-    zAxis3D: {},
-    toolbox: {
-      show: true,
-      orient: "horizontal",
-      left: "right",
-      feature: {
-        saveAsImage: {
-          show: true,
-          title: "Save as image",
-        },
-        brush: null,
-        restore: {
-          show: true,
-          title: "Reset",
-        },
-      },
-    },
-    tooltip: {
-      show: true,
-      formatter: "{a}",
-    },
-
-    series: [
-      {
-        name: "Sample 3D data",
-        type: "scatter3D",
-        symbolSize: 5,
-        smooth: false,
-        connectNulls: false,
-        showSymbol: false,
-        waveAnimation: false,
-        coordinateSystem: "cartesian3D",
-        renderLabelForZeroData: false,
-        data: series,
-        itemStyle: {
-          opacity: 1,
-        },
-      },
-    ],
-  };
-  return (
-    <ReactECharts
-      notMerge
-      showLoading={isLoading}
-      option={option}
-      style={{ height: 300, width: 300 }}
-    />
-  );
-}
-
-function EChart2D({ isLoading, series }) {
-  const option = {
-    animation: true,
-    legend: { show: true, type: "" },
-    xAxis: [{}],
-    yAxis: [{}],
-    toolbox: {
-      show: true,
-      orient: "horizontal",
-      left: "right",
-      feature: {
-        saveAsImage: {
-          show: true,
-          title: "Save as image",
-        },
-        brush: null,
-        restore: {
-          show: true,
-          title: "Reset",
-        },
-      },
-    },
-    tooltip: {
-      show: true,
-      formatter: "{a}",
-    },
-
-    series: [
-      {
-        name: "Sample 2D data",
-        type: "scatter",
-        symbolSize: 5,
-        smooth: false,
-        connectNulls: false,
-        showSymbol: false,
-        waveAnimation: false,
-        renderLabelForZeroData: false,
-        data: series,
-        itemStyle: {
-          opacity: 1,
-        },
-      },
-    ],
-  };
-  return (
-    <ReactECharts
-      notMerge
-      showLoading={isLoading}
-      option={option}
-      style={{ height: 300, width: 300 }}
-    />
-  );
-}
-
 export function UpdateDataForm() {
-  const [proj, setProj] = useState("pca");
+  const [projection, setProjection] = useState("pca");
 
-  function handleProjChange(e) {
-    setProj(e.target.value);
+  function handleProjectionChange(e) {
+    setProjection(e.target.value);
   }
 
   return (
     <Form action="update" method="post" id="embed-form">
-      <textarea
-        id="text"
-        name="text"
-        placeholder="Text"
-        rows="5"
-        cols="80"
-        wrap="soft"
-        required
-      ></textarea>
+      <div id="embed-form-text-options">
+        <input id="meta" name="meta" placeholder="Label" />
+        <textarea
+          id="text"
+          name="text"
+          placeholder="Text"
+          rows="5"
+          cols="80"
+          wrap="soft"
+          required
+        ></textarea>
+      </div>
       <div id="embed-options">
         <fieldset>
           <legend>Projection</legend>
@@ -188,10 +85,10 @@ export function UpdateDataForm() {
             <input
               type="radio"
               id="pca"
-              name="proj"
+              name="projection"
               value="pca"
-              checked={proj === "pca"}
-              onChange={handleProjChange}
+              checked={projection === "pca"}
+              onChange={handleProjectionChange}
             />
             <label htmlFor="pca"> pca</label>
           </div>
@@ -199,10 +96,10 @@ export function UpdateDataForm() {
             <input
               type="radio"
               id="tsne"
-              name="proj"
+              name="projection"
               value="tsne"
-              checked={proj === "tsne"}
-              onChange={handleProjChange}
+              checked={projection === "tsne"}
+              onChange={handleProjectionChange}
             />
             <label htmlFor="tsne"> t-sne</label>
           </div>
