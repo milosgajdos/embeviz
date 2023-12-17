@@ -1,4 +1,4 @@
-import { Form, useLoaderData, redirect } from "react-router-dom";
+import { Form, useLoaderData, useNavigation, redirect } from "react-router-dom";
 import ReactECharts from "echarts-for-react";
 import "echarts-gl";
 import { useState } from "react";
@@ -27,23 +27,32 @@ export async function action({ request, params }) {
 
 export default function Embed() {
   const { provider } = useLoaderData();
+  const navigation = useNavigation();
 
   return (
-    <div id="embed">
-      <div>
-        <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
-        {provider.description && <p>{provider.description}</p>}
-        <div id="charts">
-          <EChart3D series={provider.data["3d"]} />
-          <EChart2D series={provider.data["2d"]} />
+    <>
+      <div id="embed">
+        <div>
+          <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
+          {provider.description && <p>{provider.description}</p>}
+          <div id="charts">
+            <EChart3D
+              isLoading={navigation.state === "loading"}
+              series={provider.data["3D"]}
+            />
+            <EChart2D
+              isLoading={navigation.state === "loading"}
+              series={provider.data["2D"]}
+            />
+          </div>
         </div>
       </div>
       <UpdateDataForm />
-    </div>
+    </>
   );
 }
 
-function EChart3D({ series }) {
+function EChart3D({ isLoading, series }) {
   const option = {
     animation: true,
     legend: { show: true, type: "" },
@@ -90,10 +99,17 @@ function EChart3D({ series }) {
       },
     ],
   };
-  return <ReactECharts option={option} style={{ height: 300, width: 300 }} />;
+  return (
+    <ReactECharts
+      notMerge
+      showLoading={isLoading}
+      option={option}
+      style={{ height: 300, width: 300 }}
+    />
+  );
 }
 
-function EChart2D({ series }) {
+function EChart2D({ isLoading, series }) {
   const option = {
     animation: true,
     legend: { show: true, type: "" },
@@ -137,7 +153,14 @@ function EChart2D({ series }) {
       },
     ],
   };
-  return <ReactECharts option={option} style={{ height: 300, width: 300 }} />;
+  return (
+    <ReactECharts
+      notMerge
+      showLoading={isLoading}
+      option={option}
+      style={{ height: 300, width: 300 }}
+    />
+  );
 }
 
 export function UpdateDataForm() {

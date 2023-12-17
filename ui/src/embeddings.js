@@ -4,17 +4,17 @@ import sortBy from "sort-by";
 
 const globalData = new Map([
   [
-    "1",
+    "openai",
     {
       name: "OpenAI",
       description: "OpenAI Embeddings",
       data: {
-        "2d": [
+        "2D": [
           [0.5, 0.6],
           [0.1, 0.2],
           [0.4, 0.1],
         ],
-        "3d": [
+        "3D": [
           [0.4, 0.1, 0.3],
           [0.2, 0.1, 0.1],
           [0.1, 0.1, 0.2],
@@ -23,17 +23,17 @@ const globalData = new Map([
     },
   ],
   [
-    "2",
+    "vertexai",
     {
       name: "VertexAI",
       description: "VertexAI Embeddings",
       data: {
-        "2d": [
+        "2D": [
           [0.43, 0.77],
           [0.21, 0.33],
           [0.42, 0.78],
         ],
-        "3d": [
+        "3D": [
           [0.234, 0.144, 0.453],
           [0.4442, 0.661, 0.51],
           [0.22, 0.11, 0.82],
@@ -70,9 +70,10 @@ export async function updateData(id, updates) {
     name: provider.name,
     description: provider.description,
     data: {
-      "2d": [[...provider.data["2d"], [Math.random(), Math.random()]]],
-      "3d": [
-        [...provider.data["2d"], [Math.random(), Math.random(), Math.random()]],
+      "2D": [...provider.data["2D"], [Math.random(), Math.random()]],
+      "3D": [
+        ...provider.data["3D"],
+        [Math.random(), Math.random(), Math.random()],
       ],
     },
   });
