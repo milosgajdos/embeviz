@@ -1,7 +1,7 @@
 import { Form, useLoaderData, useNavigation, redirect } from "react-router-dom";
 import { useState } from "react";
-import { getProvider, updateData } from "../embeddings";
-import EChart from "../charts/charts";
+import { getProvider, updateData } from "../lib/embeddings";
+import EChart from "../components/echart/echart";
 
 export async function loader({ params }) {
   const provider = await getProvider(params.id);
