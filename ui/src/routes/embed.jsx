@@ -1,10 +1,15 @@
 import { Form, useLoaderData, useNavigation, redirect } from "react-router-dom";
 import { useState } from "react";
-import { getProvider, updateData } from "../lib/embeddings";
+import {
+  getProvider,
+  getProviderProjections,
+  updateData,
+} from "../lib/embeddings";
 import EChart from "../components/echart/echart";
 
 export async function loader({ params }) {
-  const provider = await getProvider(params.id);
+  // TODO: fetch provider and embeddings in parallel
+  const provider = await getProvider(params.uid);
   if (!provider) {
     throw new Response("", {
       status: 404,
@@ -12,20 +17,21 @@ export async function loader({ params }) {
     });
   }
   console.log(provider);
-  return { provider };
+  const { embeddings } = await getProviderProjections(params.uid);
+  console.log(embeddings);
+  return { provider, embeddings };
 }
 
 export async function action({ request, params }) {
   const formData = await request.formData();
   const updates = Object.fromEntries(formData);
   console.log(updates);
-  const newData = await updateData(params.id, updates);
-  console.log(`new data: ${newData}`);
-  return redirect(`/provider/${params.id}`);
+  await updateData(params.uid, updates);
+  return redirect(`/provider/${params.uid}`);
 }
 
 export default function Embed() {
-  const { provider } = useLoaderData();
+  const { provider, embeddings } = useLoaderData();
   const navigation = useNavigation();
 
   return (
@@ -39,14 +45,14 @@ export default function Embed() {
               name="3D series"
               dim="3D"
               isLoading={navigation.state === "loading"}
-              embeddings={provider.embeddings["3D"]}
+              embeddings={embeddings["3D"]}
               styling={{ height: 300, width: 300 }}
             />
             <EChart
               name="2D series"
               dim="2D"
               isLoading={navigation.state === "loading"}
-              embeddings={provider.embeddings["2D"]}
+              embeddings={embeddings["2D"]}
               styling={{ height: 300, width: 300 }}
             />
           </div>
@@ -67,7 +73,7 @@ export function UpdateDataForm() {
   return (
     <Form action="update" method="post" id="embed-form">
       <div id="embed-form-text-options">
-        <input id="meta" name="meta" placeholder="Label" />
+        <input id="label" name="label" placeholder="Label" />
         <textarea
           id="text"
           name="text"

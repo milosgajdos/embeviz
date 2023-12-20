@@ -24,12 +24,12 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Index /> },
           {
-            path: "provider/:id",
+            path: "provider/:uid",
             element: <Embed />,
             loader: embedLoader,
           },
           {
-            path: "provider/:id/update",
+            path: "provider/:uid/update",
             element: <Embed />,
             action: embedAction,
             errorElement: <div>Oops! There was an error.</div>,
