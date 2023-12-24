@@ -86,6 +86,8 @@ func NewServer(options ...Option) (*Server, error) {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
+	s.app.Static("/ui", "./ui/dist")
+
 	api := s.app.Group("/api")
 	v1 := api.Group("/v1")
 	v1.Get("/docs/*", swagger.New())

@@ -7,7 +7,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.51.0
 	github.com/gofiber/swagger v0.1.14
 	github.com/google/uuid v1.5.0
-	github.com/milosgajdos/go-embeddings v0.0.0-20231220201448-f4fb06ca6f7b
+	github.com/milosgajdos/go-embeddings v0.1.0
 	github.com/swaggo/swag v1.16.2
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
 	golang.org/x/oauth2 v0.15.0

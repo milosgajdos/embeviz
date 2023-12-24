@@ -24,7 +24,7 @@ embeviz
 /coverage
 
 # next.js
-i**/.next/
+**/.next/
 **/out/
 
 # production
@@ -41,3 +41,6 @@ i**/.next/
 # typescript
 **/*.tsbuildinfo
 **/.env
+
+# build files
+**/dist

@@ -72,8 +72,8 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-runewidth v0.0.15 h1:UNAjwbU9l54TA3KzvqLGxwWjHmMgBUVhBiTjelZgg3U=
 github.com/mattn/go-runewidth v0.0.15/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
-github.com/milosgajdos/go-embeddings v0.0.0-20231220201448-f4fb06ca6f7b h1:uXZLmasuqDidvvWrpPmZUgBob7lgNVSMaJg1gPH+v0M=
-github.com/milosgajdos/go-embeddings v0.0.0-20231220201448-f4fb06ca6f7b/go.mod h1:lhMigZZD3yD9CIDP6/upxok3G3zxKlFaQsSj+samopg=
+github.com/milosgajdos/go-embeddings v0.1.0 h1:zZB8kVWPhm0fZ8mlpt4JcmX49kyHKFXJS6okY0LnsaA=
+github.com/milosgajdos/go-embeddings v0.1.0/go.mod h1:lhMigZZD3yD9CIDP6/upxok3G3zxKlFaQsSj+samopg=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/philhofer/fwd v1.1.2/go.mod h1:qkPdfjR2SIEbspLqpe1tO4n5yICnr2DY7mqEx2tUTP0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

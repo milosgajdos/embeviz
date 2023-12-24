@@ -24,12 +24,6 @@
           devShells.default = callPackage ./shell.nix {
             inherit (gomod2nix.legacyPackages.${system}) mkGoEnv gomod2nix;
           };
-          apps = {
-            embeviz = {
-              type = "app";
-              program = "${self.packages.${system}.default}/bin/embeviz";
-            };
-          };
         })
     );
 }
