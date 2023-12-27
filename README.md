@@ -34,6 +34,14 @@ cd ui && npm install && npm run build
 
 # Run
 
+Before you run the app you need to make sure you have set some environment variables required by specific embeddings API providers. See the list below:
+* [OpenAI](https://openai.com/): `OPENAI_API_KEY`
+* [Cohere](https://cohere.com/): `COHERE_API_KEY`
+* [Google VertexAI](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview): `VERTEXAI_TOKEN` (get it by running `gcloud auth print-access-token` once you've set up your GCP project and authenticated locally) and `GOOGLE_PROJECT_ID` (the ID of the GCP project)
+
+**NOTE:** if none of the above have been set, no embeddings provider is loaded and you won't be able to interact with the app. The project doesn't allow adding new embeddings providers at the moment.
+It relies on the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module so we only support specific embeddings API providers.
+
 Once you've built the Go binary and bundled the webapp you can simply run the following command:
 ```shell
 go run ./...

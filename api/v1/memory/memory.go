@@ -9,17 +9,22 @@ import (
 )
 
 const (
-	// MemoryDSN is the in-memory data source name.
-	MemoryDSN = ":memory:"
+	// DSN is the in-memory data source name.
+	DSN = ":memory:"
 )
 
-// DB is an in-memory datastore.
+// Provider store model.
+type Provider map[string]any
+
+// DB is an in-memory DB store.
 type DB struct {
 	// DSN string.
 	DSN string
 	// Closed flag for DB operations.
 	Closed bool
 	// store stores memory store
+	// TODO: maybe define some type
+	// for the second level store
 	store map[string]map[string]any
 	*sync.RWMutex
 }
@@ -47,7 +52,7 @@ func (db *DB) Open() (err error) {
 		return fmt.Errorf("dsn required")
 	}
 
-	if db.DSN != MemoryDSN {
+	if db.DSN != DSN {
 		if db.store, err = openFromFS(os.DirFS(db.DSN)); err != nil {
 			return err
 		}
@@ -63,8 +68,8 @@ func (db *DB) Open() (err error) {
 
 // Close closes the database connection.
 func (db *DB) Close() error {
-	db.RLock()
-	defer db.RUnlock()
+	db.Lock()
+	defer db.Unlock()
 
 	if db.Closed {
 		return nil
@@ -73,8 +78,6 @@ func (db *DB) Close() error {
 	db.Closed = true
 	return nil
 }
-
-type Provider map[string]any
 
 // openFromFS opens DB and loads all data stored on the given fs.
 func openFromFS(sys fs.FS) (map[string]map[string]any, error) {

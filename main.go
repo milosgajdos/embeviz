@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	v1 "github.com/milosgajdos/embeviz/api/v1"
 	"github.com/milosgajdos/embeviz/api/v1/http"
 	"github.com/milosgajdos/embeviz/api/v1/memory"
 	"github.com/milosgajdos/go-embeddings/cohere"
@@ -61,48 +62,21 @@ func run(args []string) error {
 		return err
 	}
 
-	db, err := memory.NewDB(*dsn)
-	if err != nil {
-		return fmt.Errorf("failed creating new DB: %v", err)
-	}
-	if err := db.Open(); err != nil {
-		return fmt.Errorf("failed opening DB: %v", err)
-	}
-
-	ps, err := memory.NewProvidersService(db)
-	if err != nil {
-		return fmt.Errorf("failed creating graph service: %v", err)
-	}
-
-	// TODO: major hack
-	embedders := make(map[string]any)
-	openAI, err := ps.AddProvider(context.Background(), "OpenAI", map[string]any{})
+	// creates provider service
+	ps, err := NewProviderService(*dsn)
 	if err != nil {
 		return err
 	}
-	embedders[openAI.UID] = openai.NewClient()
 
-	cohereAI, err := ps.AddProvider(context.Background(), "Cohere", map[string]any{})
+	// adds default embedders
+	embedders, err := AddDefaultEmbedders(ps)
 	if err != nil {
 		return err
 	}
-	embedders[cohereAI.UID] = cohere.NewClient()
 
-	ts, err := google.DefaultTokenSource(context.Background(), vertexai.Scopes)
-	if err != nil {
-		return fmt.Errorf("vertexai: token source: %v", err)
-	}
-	vertexAI, err := ps.AddProvider(context.Background(), "VertexAI", map[string]any{})
-	if err != nil {
-		return err
-	}
-	embedders[vertexAI.UID] = vertexai.NewClient(
-		vertexai.WithTokenSrc(ts),
-		vertexai.WithModelID(vertexai.EmbedGeckoV2.String()))
-
-	s.Embedders = embedders
 	s.Addr = *addr
 	s.ProvidersService = ps
+	s.Embedders = embedders
 
 	// Create context that listens for the interrupt signal from the OS.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -134,4 +108,71 @@ func run(args []string) error {
 	defer cancel()
 
 	return s.Close(timeoutCtx)
+}
+
+// NewProviderService returns an instance of v1.ProviderService based on the DSN
+// Currently we only support in-memory implementation
+func NewProviderService(dsn string) (v1.ProvidersService, error) {
+	switch dsn {
+	case memory.DSN:
+		return makeMemoryProvidersService(dsn)
+	default:
+		return nil, fmt.Errorf("unsuported DSN: %s", dsn)
+	}
+}
+
+// makeMemoryProvidersService creates an ProvidersService
+// backed my in-memory datastore and returns it.
+func makeMemoryProvidersService(dsn string) (v1.ProvidersService, error) {
+	db, err := memory.NewDB(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating new DB: %v", err)
+	}
+	if err := db.Open(); err != nil {
+		return nil, fmt.Errorf("failed opening DB: %v", err)
+	}
+	return memory.NewProvidersService(db)
+}
+
+// AddDefaultEmbedders adds the default embedders as long as alll the required
+// environment variables are set for eache specific embedding provider:
+// * OPENAI_API_KEY for OpenAI API
+// * COHERE_API_KEY for Cohere API
+// * VERTEXAI_TOKEN, VERTEXAI_MODEL_ID, GOOGLE_PROJECT_ID for Google VertexAI
+func AddDefaultEmbedders(ps v1.ProvidersService) (map[string]any, error) {
+	embedders := make(map[string]any)
+
+	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
+		openAI, err := ps.AddProvider(context.Background(), "OpenAI", map[string]any{})
+		if err != nil {
+			return nil, err
+		}
+		embedders[openAI.UID] = openai.NewClient()
+	}
+
+	if apiKey := os.Getenv("COHERE_API_KEY"); apiKey != "" {
+		cohereAI, err := ps.AddProvider(context.Background(), "Cohere", map[string]any{})
+		if err != nil {
+			return nil, err
+		}
+		embedders[cohereAI.UID] = cohere.NewClient()
+	}
+
+	if os.Getenv("VERTEXAI_TOKEN") != "" &&
+		os.Getenv("GOOGLE_PROJECT_ID") != "" {
+		vertexAI, err := ps.AddProvider(context.Background(), "VertexAI", map[string]any{})
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err := google.DefaultTokenSource(context.Background(), vertexai.Scopes)
+		if err != nil {
+			return nil, fmt.Errorf("vertexai: token source: %v", err)
+		}
+		embedders[vertexAI.UID] = vertexai.NewClient(
+			vertexai.WithTokenSrc(ts),
+			vertexai.WithModelID(vertexai.EmbedGeckoV2.String()))
+	}
+
+	return embedders, nil
 }
