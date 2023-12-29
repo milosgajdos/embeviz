@@ -13,8 +13,8 @@ type ProvidersResponse struct {
 
 // ProjectionsResponse is returned when querying provider embeddings projections
 type ProjectionsResponse struct {
-	Embeddings map[Dim][]Embedding `json:"embeddings"`
-	N          int                 `json:"n"`
+	Projections map[Dim][]Embedding `json:"embeddings"`
+	N           int                 `json:"n"`
 }
 
 // EmbeddingsResponse is returned when querying provider embeddings.

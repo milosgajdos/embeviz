@@ -24,10 +24,8 @@ func (s *Server) registerProviderRoutes(r fiber.Router) {
 	routes.Put("/providers/:uid/embeddings", s.UpdateProviderEmbeddings)
 	// drop existing provider embeddings
 	routes.Delete("/providers/:uid/embeddings", s.DropProviderEmbeddings)
-	// drop existing provider projections
-	routes.Delete("/providers/:uid/projections", s.DropProviderProjections)
 	// compute existing provider projections
-	routes.Put("/providers/:uid/projections", s.ComputeProviderProjections)
+	routes.Patch("/providers/:uid/projections", s.ComputeProviderProjections)
 	// mount graph routes at the root of r
 	r.Mount("/", routes)
 }
@@ -112,6 +110,8 @@ func (s *Server) GetProviderByUID(c *fiber.Ctx) error {
 // @Tags providers
 // @Produce json
 // @Param id path string true "Provider UID"
+// @Param offset query int false "Result offset"
+// @Param limit query int false "Result limit"
 // @Success 200 {object} v1.EmbeddingsResponse
 // @Failure 400 {object} v1.ErrorResponse
 // @Failure 404 {object} v1.ErrorResponse
@@ -165,6 +165,8 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 // @Tags providers
 // @Produce json
 // @Param id path string true "Provider UID"
+// @Param offset query int false "Result offset"
+// @Param limit query int false "Result limit"
 // @Success 200 {object} v1.ProjectionsResponse
 // @Failure 400 {object} v1.ErrorResponse
 // @Failure 404 {object} v1.ErrorResponse
@@ -202,7 +204,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 		}
 	}
 
-	embeddings, n, err := s.ProvidersService.GetProviderProjections(context.TODO(), uid.String(), filter)
+	projections, n, err := s.ProvidersService.GetProviderProjections(context.TODO(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -216,8 +218,8 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(v1.ProjectionsResponse{
-		Embeddings: embeddings,
-		N:          n,
+		Projections: projections,
+		N:           n,
 	})
 }
 
@@ -263,6 +265,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
+	// TODO: fetch this in a goroutine
 	resp, err := FetchEmbeddings(context.TODO(), embedder, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
@@ -323,46 +326,6 @@ func (s *Server) DropProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	// NOTE: we must drop the projections, too, because keeping them around makes no sense!
-	if err := s.ProvidersService.DropProviderProjections(context.TODO(), uid.String()); err != nil {
-		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
-			return c.SendStatus(fiber.StatusNoContent)
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
-
-	return c.SendStatus(fiber.StatusNoContent)
-}
-
-// DropProviderProjections drops all projections of the provider with the given UID.
-// @Summary Delete provider projections by UID.
-// @Description Delete projections by provider UID.
-// @Tags providers
-// @Produce json
-// @Param uid path string true "Provider UID"
-// @Success 204 {string} status "Provider projections deleted successfully"
-// @Failure 400 {object} v1.ErrorResponse
-// @Failure 500 {object} v1.ErrorResponse
-// @Router /v1/providers/{uid}/projections [delete]
-func (s *Server) DropProviderProjections(c *fiber.Ctx) error {
-	uid, err := uuid.Parse(c.Params("uid"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
-
-	if err := s.ProvidersService.DropProviderProjections(context.TODO(), uid.String()); err != nil {
-		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
-			return c.SendStatus(fiber.StatusNoContent)
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
-
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -373,12 +336,13 @@ func (s *Server) DropProviderProjections(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "Provider UID"
-// @Param provider body v1.EmbeddingUpdate true "Provider projections"
+// @Param provider body v1.EmbeddingProjectionUpdate true "Update embedding projections"
+// @Success 200 {object} v1.ProjectionsResponse
 // @Success 200 {object} v1.Embedding
 // @Failure 400 {object} v1.ErrorResponse
 // @Failure 404 {object} v1.ErrorResponse
 // @Failure 500 {object} v1.ErrorResponse
-// @Router /v1/providers/{uid}/projections [put]
+// @Router /v1/providers/{uid}/projections [patch]
 func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
 	uid, err := uuid.Parse(c.Params("uid"))
 	if err != nil {
@@ -387,7 +351,34 @@ func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
 		})
 	}
 
-	fmt.Println(uid)
+	// TODO: validate payload
+	req := new(v1.EmbeddingProjectionUpdate)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	if req.Projection != v1.PCA && req.Projection != v1.TSNE {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: fmt.Sprintf("invalid projection: %v", req.Projection),
+		})
+	}
+
+	if req.Metadata == nil {
+		req.Metadata = make(map[string]any)
+	}
+	req.Metadata["projection"] = req.Projection
+	proj := req.Projection
+
+	if err := s.ProvidersService.ComputeProviderProjections(context.TODO(), uid.String(), proj); err != nil {
+		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	return c.SendStatus(fiber.StatusAccepted)
 }

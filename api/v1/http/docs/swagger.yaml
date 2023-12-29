@@ -17,6 +17,14 @@ definitions:
           type: number
         type: array
     type: object
+  v1.EmbeddingProjectionUpdate:
+    properties:
+      metadata:
+        additionalProperties: {}
+        type: object
+      projection:
+        $ref: '#/definitions/v1.Projection'
+    type: object
   v1.EmbeddingUpdate:
     properties:
       label:
@@ -183,6 +191,14 @@ paths:
         name: id
         required: true
         type: string
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -245,32 +261,6 @@ paths:
       tags:
       - providers
   /v1/providers/{uid}/projections:
-    delete:
-      description: Delete projections by provider UID.
-      parameters:
-      - description: Provider UID
-        in: path
-        name: uid
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Provider projections deleted successfully
-          schema:
-            type: string
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/v1.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/v1.ErrorResponse'
-      summary: Delete provider projections by UID.
-      tags:
-      - providers
     get:
       description: Returns embedding projections for the provider with the given UID.
       parameters:
@@ -279,6 +269,14 @@ paths:
         name: id
         required: true
         type: string
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -301,7 +299,7 @@ paths:
       summary: Get provider embedding projections by UID.
       tags:
       - providers
-    put:
+    patch:
       consumes:
       - application/json
       description: Recompute provider projections.
@@ -311,12 +309,12 @@ paths:
         name: id
         required: true
         type: string
-      - description: Provider projections
+      - description: Update embedding projections
         in: body
         name: provider
         required: true
         schema:
-          $ref: '#/definitions/v1.EmbeddingUpdate'
+          $ref: '#/definitions/v1.EmbeddingProjectionUpdate'
       produces:
       - application/json
       responses:

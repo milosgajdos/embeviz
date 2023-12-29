@@ -49,15 +49,20 @@ type ProviderFilter struct {
 	// Filtering fields.
 	Dim *Dim `json:"dim"`
 	// Restrict to subset of range.
-	Offset int  `json:"offset"`
-	Limit  int  `json:"limit"`
-	Last   bool `json:"last"`
+	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
 }
 
 // EmbeddingUpdate is used to fetch embeddings.
 type EmbeddingUpdate struct {
 	Text       string         `json:"text"`
 	Label      string         `json:"label"`
+	Projection Projection     `json:"projection"`
+	Metadata   map[string]any `json:"metadata,omitempty"`
+}
+
+// EmbeddingProjectionUpdate is used to recompute embedding projections.
+type EmbeddingProjectionUpdate struct {
 	Projection Projection     `json:"projection"`
 	Metadata   map[string]any `json:"metadata,omitempty"`
 }
@@ -77,10 +82,7 @@ type ProvidersService interface {
 	// UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
 	UpdateProviderEmbeddings(ctx context.Context, uid string, update Embedding, projection Projection) (*Embedding, error)
 	// DropProviderEmbeddings drops all provider embeddings from the store
-	// NOTE: this must drop projections, too because keeping them would make no sense
 	DropProviderEmbeddings(ctx context.Context, uid string) error
-	// DropProviderProjections drops all provider projections from the store
-	DropProviderProjections(ctx context.Context, uid string) error
 	// ComputeProviderProjections drops existing projections and recomputes anew.
-	ComputeProviderProjections(ctx context.Context, uid string, projection Projection) (map[Dim][]Embedding, int, error)
+	ComputeProviderProjections(ctx context.Context, uid string, projection Projection) error
 }

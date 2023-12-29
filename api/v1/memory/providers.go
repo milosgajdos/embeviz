@@ -147,6 +147,8 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 }
 
 // DropProviderEmbeddings drops all embeddings for the provider with the given uid.
+// NOTE: this obviously also drops the projections, too as keeping that would make no sense
+// since there would be no embeddings to associate them with
 // nolint:revive
 func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
 	p.db.Lock()
@@ -156,46 +158,30 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 		return v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
 	}
 	provider[emb] = []v1.Embedding{}
-	return nil
-}
-
-// DropProviderEmbeddings drops all projections for the provider with the given uid.
-// nolint:revive
-func (p *ProvidersService) DropProviderProjections(ctx context.Context, uid string) error {
-	p.db.Lock()
-	defer p.db.Unlock()
-	provider, ok := p.db.store[uid]
-	if !ok {
-		return v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
-	}
-	provider[proj] = map[v1.Dim][]v1.Embedding{
-		v1.Dim2D: {},
-		v1.Dim3D: {},
-	}
+	provider[proj] = map[v1.Dim][]v1.Embedding{}
 	return nil
 }
 
 // ComputeProviderProjections recomputes all projections from scratch for the provider with the given UID.
 // nolint:revive
-func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid string, prj v1.Projection) (map[v1.Dim][]v1.Embedding, int, error) {
+func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid string, prj v1.Projection) error {
 	p.db.Lock()
 	defer p.db.Unlock()
 	provider, ok := p.db.store[uid]
 	if !ok {
-		return nil, 0, v1.Errorf(v1.ENOTFOUND, "provider %s not found", uid)
+		return v1.Errorf(v1.ENOTFOUND, "provider %s not found", uid)
 	}
 	embs := provider[emb].([]v1.Embedding)
 
 	prjs, err := computeProjections(embs, prj)
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
 	// TODO: make a deep copy of prjs
 	provider[proj] = prjs
-	projStore := provider[proj].(map[v1.Dim][]v1.Embedding)
 
-	return prjs, len(projStore[v1.Dim2D]), nil
+	return nil
 }
 
 func computeProjections(embs []v1.Embedding, prj v1.Projection) (map[v1.Dim][]v1.Embedding, error) {

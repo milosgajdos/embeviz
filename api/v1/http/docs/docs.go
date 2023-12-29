@@ -120,6 +120,18 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -263,6 +275,18 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Result limit",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -292,7 +316,7 @@ const docTemplate = `{
                     }
                 }
             },
-            "put": {
+            "patch": {
                 "description": "Recompute provider projections.",
                 "consumes": [
                     "application/json"
@@ -313,12 +337,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Provider projections",
+                        "description": "Update embedding projections",
                         "name": "provider",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.EmbeddingUpdate"
+                            "$ref": "#/definitions/v1.EmbeddingProjectionUpdate"
                         }
                     }
                 ],
@@ -348,45 +372,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "Delete projections by provider UID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "providers"
-                ],
-                "summary": "Delete provider projections by UID.",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Provider UID",
-                        "name": "uid",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Provider projections deleted successfully",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ErrorResponse"
-                        }
-                    }
-                }
             }
         }
     },
@@ -405,6 +390,18 @@ const docTemplate = `{
                     "items": {
                         "type": "number"
                     }
+                }
+            }
+        },
+        "v1.EmbeddingProjectionUpdate": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "projection": {
+                    "$ref": "#/definitions/v1.Projection"
                 }
             }
         },
