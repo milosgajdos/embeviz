@@ -6,7 +6,7 @@
 
 A simple app that helps you visualize vector embeddings.
 
-**THIS PROJECT IS WILDLY EXPERIMENTAL! USE AT YOUR OWN RISK OF SANITY!**
+**THIS PROJECT IS WILDLY EXPERIMENTAL! USE AT YOUR OWN RISK OF SANITY! IF YOU LIKE CLEAN DRY CODE THIS ISN'T GONNA BE YOUR JAM!**
 
 The app consists of two components:
 * an API (written in Go, using [gofiber framework](https://docs.gofiber.io/))
@@ -14,11 +14,13 @@ The app consists of two components:
 
 The SPA is served as a static asset on `/ui` URL path when you start the app.
 
+The API offers swagger API endpoint that seves the API documentation powering the SPA.
+
 This project leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like OpenAI, etc.
 
-As a result of this you must supply specific environment variables that are used to initialized the API clients for fetching the embeddings.
+As a result of this you must supply specific environment variables that are used to initialized the API clients for fetching the embeddings. See the README of the `go-embeddings` module for more details.
 
-**NOTE:** the API stores the embeddings in an in-memory "DB" (it's a major Go maps hack)
+**NOTE:** By default the API stores the embeddings in an in-memory "DB" (it's a major Go maps hack)
 
 # Build
 
@@ -49,8 +51,11 @@ go run ./...
 
 You should now be able to access the app on [http://localhost:5050/ui](http://localhost:5050/ui).
 
+The API docs are available on [http://localhost:5050/api/v1/docs](http://localhost:5050/api/v1/docs).
+
 # TODO
 
 * [ ] Clean up the code: both the Go and React
+* [ ] Clean up tests and add more of them
 * [ ] Add support for a vector DB to store the embeddings in
 * [ ] Embed the SPA and all its assets into the Go binary
