@@ -13,8 +13,8 @@
 }:
 
 buildGoApplication {
-  pname = "go-app";
-  version = "0.1";
+  pname = "embeviz";
+  version = "0.0.1";
   pwd = ./.;
   src = ./.;
   modules = ./gomod2nix.toml;

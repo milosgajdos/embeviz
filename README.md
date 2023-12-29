@@ -4,4 +4,58 @@
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/milosgajdos/embeviz)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A simple webapp that helps you visualize vector embeddings.
+A simple app that helps you visualize vector embeddings.
+
+**THIS PROJECT IS WILDLY EXPERIMENTAL! USE AT YOUR OWN RISK OF SANITY! IF YOU LIKE CLEAN DRY CODE THIS ISN'T GONNA BE YOUR JAM!**
+
+The app consists of two components:
+* an API (written in Go, using [gofiber framework](https://docs.gofiber.io/))
+* an SPA (written in JavaScript using [Reactjs](https://react.dev/) and [React Router](https://reactrouter.com/en/main))
+
+The SPA is served as a static asset on `/ui` URL path when you start the app.
+
+The API offers swagger API endpoint that seves the API documentation powering the SPA.
+
+This project leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like OpenAI, etc.
+
+As a result of this you must supply specific environment variables that are used to initialized the API clients for fetching the embeddings. See the README of the `go-embeddings` module for more details.
+
+**NOTE:** By default the API stores the embeddings in an in-memory "DB" (it's a major Go maps hack)
+
+# Build
+
+Build the Go binary:
+```shell
+go get ./... && go build
+```
+
+SPA:
+```shell
+cd ui && npm install && npm run build
+```
+
+# Run
+
+Before you run the app you need to make sure you have set some environment variables required by specific embeddings API providers. See the list below:
+* [OpenAI](https://openai.com/): `OPENAI_API_KEY`
+* [Cohere](https://cohere.com/): `COHERE_API_KEY`
+* [Google VertexAI](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview): `VERTEXAI_TOKEN` (get it by running `gcloud auth print-access-token` once you've set up your GCP project and authenticated locally) and `GOOGLE_PROJECT_ID` (the ID of the GCP project)
+
+**NOTE:** if none of the above have been set, no embeddings provider is loaded and you won't be able to interact with the app. The project doesn't allow adding new embeddings providers at the moment.
+It relies on the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module so we only support specific embeddings API providers.
+
+Once you've built the Go binary and bundled the webapp you can simply run the following command:
+```shell
+go run ./...
+```
+
+You should now be able to access the app on [http://localhost:5050/ui](http://localhost:5050/ui).
+
+The API docs are available on [http://localhost:5050/api/v1/docs](http://localhost:5050/api/v1/docs).
+
+# TODO
+
+* [ ] Clean up the code: both the Go and React
+* [ ] Clean up tests and add more of them
+* [ ] Add support for a vector DB to store the embeddings in
+* [ ] Embed the SPA and all its assets into the Go binary

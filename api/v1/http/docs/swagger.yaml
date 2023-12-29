@@ -1,0 +1,340 @@
+basePath: /api
+definitions:
+  v1.Embedding:
+    properties:
+      metadata:
+        additionalProperties: {}
+        description: Metadata for the given embedding vector.
+        type: object
+      value:
+        description: |-
+          Values stores embedding vector values.
+          NOTE: the key is set to value - singular
+          because the API is consumed by ECharts and
+          it's just sad ECharts expects value slice.
+          We could handle that in JS but who can be bothered?
+        items:
+          type: number
+        type: array
+    type: object
+  v1.EmbeddingProjectionUpdate:
+    properties:
+      metadata:
+        additionalProperties: {}
+        type: object
+      projection:
+        $ref: '#/definitions/v1.Projection'
+    type: object
+  v1.EmbeddingUpdate:
+    properties:
+      label:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      projection:
+        $ref: '#/definitions/v1.Projection'
+      text:
+        type: string
+    type: object
+  v1.EmbeddingsResponse:
+    properties:
+      embeddings:
+        items:
+          $ref: '#/definitions/v1.Embedding'
+        type: array
+      "n":
+        type: integer
+    type: object
+  v1.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  v1.Projection:
+    enum:
+    - tsne
+    - pca
+    type: string
+    x-enum-varnames:
+    - TSNE
+    - PCA
+  v1.ProjectionsResponse:
+    properties:
+      embeddings:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/v1.Embedding'
+          type: array
+        type: object
+      "n":
+        type: integer
+    type: object
+  v1.Provider:
+    properties:
+      id:
+        description: UID of the provider's UUID.
+        type: string
+      metadata:
+        additionalProperties: {}
+        description: Metadata about the provider.
+        type: object
+      name:
+        description: Name is the name of the provider
+        type: string
+    type: object
+  v1.ProvidersResponse:
+    properties:
+      "n":
+        type: integer
+      providers:
+        items:
+          $ref: '#/definitions/v1.Provider'
+        type: array
+    type: object
+info:
+  contact: {}
+  description: This is an API for fetching embeddings.
+  termsOfService: http://swagger.io/terms/
+  title: Embeddings API
+  version: "1.0"
+paths:
+  /v1/providers:
+    get:
+      description: Get all available providers.
+      parameters:
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ProvidersResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Get all providers.
+      tags:
+      - providers
+  /v1/providers/{uid}:
+    get:
+      description: Returns embeddings provider with the given UID.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.Provider'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Get provider by UID.
+      tags:
+      - providers
+  /v1/providers/{uid}/embeddings:
+    delete:
+      description: Delete embeddings by provider UID. This also drops projections.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Provider embeddings deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Delete provider embeddings by UID.
+      tags:
+      - providers
+    get:
+      description: Returns embeddings for the provider with the given UID.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.EmbeddingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Get provider embedding by UID.
+      tags:
+      - providers
+    put:
+      consumes:
+      - application/json
+      description: Update provider embeddings.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update a provider
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/v1.EmbeddingUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.Embedding'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Fetch embeddings and update the store for the provider with the given
+        UID.
+      tags:
+      - providers
+  /v1/providers/{uid}/projections:
+    get:
+      description: Returns embedding projections for the provider with the given UID.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ProjectionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Get provider embedding projections by UID.
+      tags:
+      - providers
+    patch:
+      consumes:
+      - application/json
+      description: Recompute provider projections.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update embedding projections
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/v1.EmbeddingProjectionUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.Embedding'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Recompute embeddings projections for a provider by UID and return them
+      tags:
+      - providers
+swagger: "2.0"

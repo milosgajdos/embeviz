@@ -17,7 +17,7 @@ const defaultToolbox = {
 
 const defaultToolTip = {
   show: true,
-  formatter: "{b}: [{c}]",
+  formatter: "{b} [{c}]",
 };
 
 const defaultLegend = {
@@ -72,6 +72,21 @@ const defaultSeriesOptions = {
 };
 
 export function makeSeries(name, dim, data) {
+  // extracting the value of label and  setting it as a name
+  // TODO: clean this up, it's very fugly
+  data = data.map((obj) => {
+    const { metadata, ...rest } = obj;
+    const name = metadata?.label;
+    if (name) {
+      return {
+        ...rest,
+        name,
+      };
+    } else {
+      return obj;
+    }
+  });
+
   return {
     ...defaultSeriesOptions[dim],
     name: name,

@@ -12,33 +12,38 @@ import ErrorPage from "./error-page";
 
 import "./index.css";
 
-const router = createBrowserRouter([
+const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: <Root />,
+      errorElement: <ErrorPage />,
+      loader: rootLoader,
+      children: [
+        {
+          errorElement: <ErrorPage />,
+          children: [
+            { index: true, element: <Index /> },
+            {
+              path: "provider/:uid",
+              element: <Embed />,
+              loader: embedLoader,
+            },
+            {
+              path: "provider/:uid/update",
+              element: <Embed />,
+              action: embedAction,
+              errorElement: <div>Oops! There was an error.</div>,
+            },
+          ],
+        },
+      ],
+    },
+  ],
   {
-    path: "/",
-    element: <Root />,
-    errorElement: <ErrorPage />,
-    loader: rootLoader,
-    children: [
-      {
-        errorElement: <ErrorPage />,
-        children: [
-          { index: true, element: <Index /> },
-          {
-            path: "provider/:id",
-            element: <Embed />,
-            loader: embedLoader,
-          },
-          {
-            path: "provider/:id/update",
-            element: <Embed />,
-            action: embedAction,
-            errorElement: <div>Oops! There was an error.</div>,
-          },
-        ],
-      },
-    ],
-  },
-]);
+    basename: "/ui",
+  }
+);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
