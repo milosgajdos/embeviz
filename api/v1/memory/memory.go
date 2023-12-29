@@ -1,10 +1,7 @@
 package memory
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/fs"
-	"os"
+	"errors"
 	"sync"
 )
 
@@ -13,8 +10,11 @@ const (
 	DSN = ":memory:"
 )
 
-// Provider store model.
-type Provider map[string]any
+var (
+	ErrMissingDSN = errors.New("ErrMissingDSN")
+	ErrInvalidDSN = errors.New("ErrInvalidDSN")
+	ErrDBClosed   = errors.New("ErrDBClosed")
+)
 
 // DB is an in-memory DB store.
 type DB struct {
@@ -38,26 +38,41 @@ func NewDB(dsn string) (*DB, error) {
 	}, nil
 }
 
+// InitStore lets you init the in-memory DB
+// with the given store.
+func (db *DB) InitStore(store map[string]map[string]any) error {
+	db.Lock()
+	defer db.Unlock()
+
+	if err := db.open(); err != nil {
+		return err
+	}
+	db.store = store
+
+	return nil
+}
+
 // Open opens the database connection.
 func (db *DB) Open() (err error) {
 	db.Lock()
 	defer db.Unlock()
 
+	return db.open()
+}
+
+func (db *DB) open() error {
 	if !db.Closed {
 		return nil
 	}
 
 	// Ensure a DSN is set before attempting to open the database.
 	if db.DSN == "" {
-		return fmt.Errorf("dsn required")
+		return ErrMissingDSN
 	}
 
 	if db.DSN != DSN {
-		if db.store, err = openFromFS(os.DirFS(db.DSN)); err != nil {
-			return err
-		}
 		db.Closed = false
-		return nil
+		return ErrInvalidDSN
 	}
 
 	db.store = make(map[string]map[string]any)
@@ -77,35 +92,4 @@ func (db *DB) Close() error {
 
 	db.Closed = true
 	return nil
-}
-
-// openFromFS opens DB and loads all data stored on the given fs.
-func openFromFS(sys fs.FS) (map[string]map[string]any, error) {
-	db := make(map[string]map[string]any)
-
-	if err := fs.WalkDir(sys, ".", func(path string, e fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if e.IsDir() {
-			return nil
-		}
-
-		data, err := fs.ReadFile(sys, path)
-		if err != nil {
-			return err
-		}
-
-		p := make(Provider)
-		if err := json.Unmarshal(data, &p); err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return db, nil
 }

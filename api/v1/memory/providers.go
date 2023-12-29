@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
@@ -30,6 +31,10 @@ func NewProvidersService(db *DB) (*ProvidersService, error) {
 func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[string]any) (*v1.Provider, error) {
 	p.db.Lock()
 	defer p.db.Unlock()
+	if p.db.Closed {
+		return nil, ErrDBClosed
+	}
+
 	uid := uuid.New().String()
 	provider := &v1.Provider{
 		UID:      uid,
@@ -50,14 +55,17 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 // GetProviders fetches all available providers.
 // nolint:revive
 func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderFilter) ([]*v1.Provider, int, error) {
-	// TODO: pagination
 	p.db.RLock()
 	defer p.db.RUnlock()
+	if p.db.Closed {
+		return nil, 0, ErrDBClosed
+	}
+
 	px := make([]*v1.Provider, 0, len(p.db.store[meta]))
 	for _, p := range p.db.store {
 		px = append(px, p[meta].(*v1.Provider))
 	}
-	return px, len(px), nil
+	return applyOffsetLimit(px, filter.Offset, filter.Limit).([]*v1.Provider), len(px), nil
 }
 
 // GetProviderByid fetches a specific provider by uid.
@@ -65,6 +73,10 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v1.Provider, error) {
 	p.db.RLock()
 	defer p.db.RUnlock()
+	if p.db.Closed {
+		return nil, ErrDBClosed
+	}
+
 	if p, ok := p.db.store[uid]; ok {
 		return p[meta].(*v1.Provider), nil
 
@@ -75,9 +87,12 @@ func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v
 // GetProviderEmbeddings fetches a specific provider embeddings.
 // nolint:revive
 func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string, filter v1.ProviderFilter) ([]v1.Embedding, int, error) {
-	// TODO: pagination
 	p.db.RLock()
 	defer p.db.RUnlock()
+	if p.db.Closed {
+		return nil, 0, ErrDBClosed
+	}
+
 	provider, ok := p.db.store[uid]
 	if !ok {
 		return nil, 0, v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
@@ -85,15 +100,18 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 	embs := provider[emb].([]v1.Embedding)
 	newEmbs := make([]v1.Embedding, len(embs))
 	copy(newEmbs, embs)
-	return newEmbs, len(newEmbs), nil
+	return applyOffsetLimit(newEmbs, filter.Offset, filter.Limit).([]v1.Embedding), len(newEmbs), nil
 }
 
 // GetProviderProjections fetches a specific provider projection.
 // nolint:revive
 func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid string, filter v1.ProviderFilter) (map[v1.Dim][]v1.Embedding, int, error) {
-	// TODO: pagination
 	p.db.RLock()
 	defer p.db.RUnlock()
+	if p.db.Closed {
+		return nil, 0, ErrDBClosed
+	}
+
 	provider, ok := p.db.store[uid]
 	if !ok {
 		return nil, 0, v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
@@ -106,17 +124,23 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		projections := projStore[*dim]
 		newProjections := make([]v1.Embedding, len(projections))
 		copy(newProjections, projections)
-		return map[v1.Dim][]v1.Embedding{*filter.Dim: newProjections}, len(projections), nil
+		resProjs := applyOffsetLimit(newProjections, filter.Offset, filter.Limit).([]v1.Embedding)
+		return map[v1.Dim][]v1.Embedding{*filter.Dim: resProjs}, len(newProjections), nil
 	}
-	// no filter returns all dimensions projectsion
+
 	projections := provider[proj].(map[v1.Dim][]v1.Embedding)
+	// 2D projections + paging
 	newProjections2D := make([]v1.Embedding, len(projections[v1.Dim2D]))
 	copy(newProjections2D, projections[v1.Dim2D])
+	res2DProjs := applyOffsetLimit(newProjections2D, filter.Offset, filter.Limit).([]v1.Embedding)
+	// 3D projections + paging
 	newProjections3D := make([]v1.Embedding, len(projections[v1.Dim3D]))
 	copy(newProjections3D, projections[v1.Dim3D])
+	res3DProjs := applyOffsetLimit(newProjections3D, filter.Offset, filter.Limit).([]v1.Embedding)
+
 	return map[v1.Dim][]v1.Embedding{
-		v1.Dim2D: newProjections2D,
-		v1.Dim3D: newProjections3D,
+		v1.Dim2D: res2DProjs,
+		v1.Dim3D: res3DProjs,
 	}, len(newProjections2D), nil
 }
 
@@ -125,6 +149,10 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embed v1.Embedding, prj v1.Projection) (*v1.Embedding, error) {
 	p.db.Lock()
 	defer p.db.Unlock()
+	if p.db.Closed {
+		return nil, ErrDBClosed
+	}
+
 	provider, ok := p.db.store[uid]
 	if !ok {
 		return nil, v1.Errorf(v1.ENOTFOUND, "provider %s not found", uid)
@@ -139,7 +167,6 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		return nil, err
 	}
 
-	// TODO: make a deep copy of prjs
 	provider[emb] = newEmbs
 	provider[proj] = prjs
 
@@ -153,6 +180,10 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
 	p.db.Lock()
 	defer p.db.Unlock()
+	if p.db.Closed {
+		return ErrDBClosed
+	}
+
 	provider, ok := p.db.store[uid]
 	if !ok {
 		return v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
@@ -167,6 +198,10 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid string, prj v1.Projection) error {
 	p.db.Lock()
 	defer p.db.Unlock()
+	if p.db.Closed {
+		return ErrDBClosed
+	}
+
 	provider, ok := p.db.store[uid]
 	if !ok {
 		return v1.Errorf(v1.ENOTFOUND, "provider %s not found", uid)
@@ -178,7 +213,6 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 		return err
 	}
 
-	// TODO: make a deep copy of prjs
 	provider[proj] = prjs
 
 	return nil
@@ -218,4 +252,43 @@ func computeProjections(embs []v1.Embedding, prj v1.Projection) (map[v1.Dim][]v1
 		v1.Dim2D: proj2D,
 		v1.Dim3D: proj3D,
 	}, nil
+}
+
+// applyOffsetLimit applies offset and limit to items and returns the result.
+func applyOffsetLimit(items interface{}, offset int, limit int) interface{} {
+	val := reflect.ValueOf(items)
+	o := applyOffset(val, offset)
+	if reflect.ValueOf(o).Len() == 0 {
+		return reflect.Zero(reflect.TypeOf(val.Interface())).Interface()
+	}
+	return applyLimit(reflect.ValueOf(o), limit)
+}
+
+// applyOffset returns a slice of items skipped by offset.
+// If offset is negative, it returns the original slice.
+// If offset is bigger than the number of items it returns empty slice.
+func applyOffset(items reflect.Value, offset int) interface{} {
+	if offset > 0 {
+		switch {
+		case items.Len() >= offset:
+			return items.Slice(offset, items.Len()).Interface()
+		default:
+			return reflect.Zero(reflect.TypeOf(items.Interface())).Interface()
+		}
+	}
+	return items.Interface()
+}
+
+// applyLimit returns limit number of items.
+// If limit is either negative or bigger than the number of itmes it returns all items.
+func applyLimit(items reflect.Value, limit int) interface{} {
+	if limit > 0 {
+		switch {
+		case items.Len() >= limit:
+			return items.Slice(0, limit).Interface()
+		default:
+			return items.Interface()
+		}
+	}
+	return items.Interface()
 }

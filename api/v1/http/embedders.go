@@ -11,13 +11,15 @@ import (
 	"github.com/milosgajdos/go-embeddings/vertexai"
 )
 
-func FetchEmbeddings(ctx context.Context, emb any, req *v1.EmbeddingUpdate) (*v1.Embedding, error) {
+// FetchEmbeddings fetches embeddings using the provided embedder.
+// It returns the fetched embedding or fails with error.
+func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingUpdate) (*v1.Embedding, error) {
 	var (
 		vals []float64
 		embs []*embeddings.Embedding
 		err  error
 	)
-	switch p := emb.(type) {
+	switch p := embedder.(type) {
 	case *vertexai.Client:
 		embReq := &vertexai.EmbeddingRequest{
 			Instances: []vertexai.Instance{
