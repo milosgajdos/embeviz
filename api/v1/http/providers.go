@@ -22,6 +22,12 @@ func (s *Server) registerProviderRoutes(r fiber.Router) {
 	routes.Get("/providers/:uid/projections", s.GetProviderProjections)
 	// update existing provider embeddings
 	routes.Put("/providers/:uid/embeddings", s.UpdateProviderEmbeddings)
+	// drop existing provider embeddings
+	routes.Delete("/providers/:uid/embeddings", s.DropProviderEmbeddings)
+	// drop existing provider projections
+	routes.Delete("/providers/:uid/projections", s.DropProviderProjections)
+	// compute existing provider projections
+	routes.Put("/providers/:uid/projections", s.ComputeProviderProjections)
 	// mount graph routes at the root of r
 	r.Mount("/", routes)
 }
@@ -288,4 +294,100 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(emb)
+}
+
+// DropProviderEmbeddings drops all embeddings of the provider with the given uid.
+// @Summary Delete provider embeddings by UID.
+// @Description Delete embeddings by provider UID. This also drops projections.
+// @Tags providers
+// @Produce json
+// @Param uid path string true "Provider UID"
+// @Success 204 {string} status "Provider embeddings deleted successfully"
+// @Failure 400 {object} v1.ErrorResponse
+// @Failure 500 {object} v1.ErrorResponse
+// @Router /v1/providers/{uid}/embeddings [delete]
+func (s *Server) DropProviderEmbeddings(c *fiber.Ctx) error {
+	uid, err := uuid.Parse(c.Params("uid"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	if err := s.ProvidersService.DropProviderEmbeddings(context.TODO(), uid.String()); err != nil {
+		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	// NOTE: we must drop the projections, too, because keeping them around makes no sense!
+	if err := s.ProvidersService.DropProviderProjections(context.TODO(), uid.String()); err != nil {
+		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// DropProviderProjections drops all projections of the provider with the given UID.
+// @Summary Delete provider projections by UID.
+// @Description Delete projections by provider UID.
+// @Tags providers
+// @Produce json
+// @Param uid path string true "Provider UID"
+// @Success 204 {string} status "Provider projections deleted successfully"
+// @Failure 400 {object} v1.ErrorResponse
+// @Failure 500 {object} v1.ErrorResponse
+// @Router /v1/providers/{uid}/projections [delete]
+func (s *Server) DropProviderProjections(c *fiber.Ctx) error {
+	uid, err := uuid.Parse(c.Params("uid"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	if err := s.ProvidersService.DropProviderProjections(context.TODO(), uid.String()); err != nil {
+		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// ComputeProviderProjections recomputes provider projections from scratch by UID.
+// @Summary Recompute embeddings projections for a provider by UID and return them
+// @Description Recompute provider projections.
+// @Tags providers
+// @Accept json
+// @Produce json
+// @Param id path string true "Provider UID"
+// @Param provider body v1.EmbeddingUpdate true "Provider projections"
+// @Success 200 {object} v1.Embedding
+// @Failure 400 {object} v1.ErrorResponse
+// @Failure 404 {object} v1.ErrorResponse
+// @Failure 500 {object} v1.ErrorResponse
+// @Router /v1/providers/{uid}/projections [put]
+func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
+	uid, err := uuid.Parse(c.Params("uid"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	fmt.Println(uid)
+
+	return c.SendStatus(fiber.StatusNoContent)
 }

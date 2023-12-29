@@ -134,29 +134,93 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	copy(newEmbs, embs)
 	newEmbs = append(newEmbs, embed)
 
+	prjs, err := computeProjections(newEmbs, prj)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: make a deep copy of prjs
+	provider[emb] = newEmbs
+	provider[proj] = prjs
+
+	return &embed, nil
+}
+
+// DropProviderEmbeddings drops all embeddings for the provider with the given uid.
+// nolint:revive
+func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
+	p.db.Lock()
+	defer p.db.Unlock()
+	provider, ok := p.db.store[uid]
+	if !ok {
+		return v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
+	}
+	provider[emb] = []v1.Embedding{}
+	return nil
+}
+
+// DropProviderEmbeddings drops all projections for the provider with the given uid.
+// nolint:revive
+func (p *ProvidersService) DropProviderProjections(ctx context.Context, uid string) error {
+	p.db.Lock()
+	defer p.db.Unlock()
+	provider, ok := p.db.store[uid]
+	if !ok {
+		return v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
+	}
+	provider[proj] = map[v1.Dim][]v1.Embedding{
+		v1.Dim2D: {},
+		v1.Dim3D: {},
+	}
+	return nil
+}
+
+// ComputeProviderProjections recomputes all projections from scratch for the provider with the given UID.
+// nolint:revive
+func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid string, prj v1.Projection) (map[v1.Dim][]v1.Embedding, int, error) {
+	p.db.Lock()
+	defer p.db.Unlock()
+	provider, ok := p.db.store[uid]
+	if !ok {
+		return nil, 0, v1.Errorf(v1.ENOTFOUND, "provider %s not found", uid)
+	}
+	embs := provider[emb].([]v1.Embedding)
+
+	prjs, err := computeProjections(embs, prj)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// TODO: make a deep copy of prjs
+	provider[proj] = prjs
+	projStore := provider[proj].(map[v1.Dim][]v1.Embedding)
+
+	return prjs, len(projStore[v1.Dim2D]), nil
+}
+
+func computeProjections(embs []v1.Embedding, prj v1.Projection) (map[v1.Dim][]v1.Embedding, error) {
 	var (
 		err    error
 		proj2D []v1.Embedding
 		proj3D []v1.Embedding
 	)
-
 	// Calculate projection
 	switch prj {
 	case v1.PCA:
-		proj2D, err = projection.PCA(newEmbs, v1.Dim2D)
+		proj2D, err = projection.PCA(embs, v1.Dim2D)
 		if err != nil {
 			return nil, err
 		}
-		proj3D, err = projection.PCA(newEmbs, v1.Dim3D)
+		proj3D, err = projection.PCA(embs, v1.Dim3D)
 		if err != nil {
 			return nil, err
 		}
 	case v1.TSNE:
-		proj2D, err = projection.TSNE(newEmbs, v1.Dim2D)
+		proj2D, err = projection.TSNE(embs, v1.Dim2D)
 		if err != nil {
 			return nil, err
 		}
-		proj3D, err = projection.TSNE(newEmbs, v1.Dim3D)
+		proj3D, err = projection.TSNE(embs, v1.Dim3D)
 		if err != nil {
 			return nil, err
 		}
@@ -164,10 +228,8 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		return nil, v1.Errorf(v1.EINVALID, "invalid projection: %v", proj)
 
 	}
-	provider[emb] = newEmbs
-	provider[proj] = map[v1.Dim][]v1.Embedding{
+	return map[v1.Dim][]v1.Embedding{
 		v1.Dim2D: proj2D,
 		v1.Dim3D: proj3D,
-	}
-	return &embed, nil
+	}, nil
 }

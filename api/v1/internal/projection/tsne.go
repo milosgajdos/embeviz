@@ -27,9 +27,11 @@ func TSNE(embs []v1.Embedding, projDim v1.Dim) ([]v1.Embedding, error) {
 	d := mat.DenseCopyOf(resMat)
 
 	for i := range embs {
+		metadata := maps.Clone(embs[i].Metadata)
+		metadata["projection"] = v1.TSNE
 		tsnes = append(tsnes, v1.Embedding{
 			Values:   d.RawRowView(i),
-			Metadata: maps.Clone(embs[i].Metadata),
+			Metadata: metadata,
 		})
 	}
 

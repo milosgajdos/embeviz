@@ -24,22 +24,6 @@ type Embedding struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// ProvidersService manages embedding providers.
-type ProvidersService interface {
-	// AddProvider creates a new provider and returns it.
-	AddProvider(ctx context.Context, name string, metadata map[string]any) (*Provider, error)
-	// GetProviders returns a list of providers filtered by filter.
-	GetProviders(ctx context.Context, filter ProviderFilter) ([]*Provider, int, error)
-	// GetProviderByUID returns the provider with the given uuid.
-	GetProviderByUID(ctx context.Context, uid string) (*Provider, error)
-	// GetProviderEmbeddings returns embeddings for the provider with the given uid.
-	GetProviderEmbeddings(ctx context.Context, uid string, filter ProviderFilter) ([]Embedding, int, error)
-	// GetProviderProjections returns embeddings projections for the provider with the given uid.
-	GetProviderProjections(ctx context.Context, uid string, filter ProviderFilter) (map[Dim][]Embedding, int, error)
-	// UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
-	UpdateProviderEmbeddings(ctx context.Context, uid string, update Embedding, projection Projection) (*Embedding, error)
-}
-
 // Dim is projection dimenstion
 type Dim string
 
@@ -52,8 +36,12 @@ const (
 type Projection string
 
 const (
+	// TSNE projection
+	// https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding
 	TSNE Projection = "tsne"
-	PCA  Projection = "pca"
+	// PCA projection
+	// https://en.wikipedia.org/wiki/Principal_component_analysis
+	PCA Projection = "pca"
 )
 
 // ProviderFilter is used for filtering providers.
@@ -72,4 +60,27 @@ type EmbeddingUpdate struct {
 	Label      string         `json:"label"`
 	Projection Projection     `json:"projection"`
 	Metadata   map[string]any `json:"metadata,omitempty"`
+}
+
+// ProvidersService manages embedding providers.
+type ProvidersService interface {
+	// AddProvider creates a new provider and returns it.
+	AddProvider(ctx context.Context, name string, metadata map[string]any) (*Provider, error)
+	// GetProviders returns a list of providers filtered by filter.
+	GetProviders(ctx context.Context, filter ProviderFilter) ([]*Provider, int, error)
+	// GetProviderByUID returns the provider with the given uuid.
+	GetProviderByUID(ctx context.Context, uid string) (*Provider, error)
+	// GetProviderEmbeddings returns embeddings for the provider with the given uid.
+	GetProviderEmbeddings(ctx context.Context, uid string, filter ProviderFilter) ([]Embedding, int, error)
+	// GetProviderProjections returns embeddings projections for the provider with the given uid.
+	GetProviderProjections(ctx context.Context, uid string, filter ProviderFilter) (map[Dim][]Embedding, int, error)
+	// UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
+	UpdateProviderEmbeddings(ctx context.Context, uid string, update Embedding, projection Projection) (*Embedding, error)
+	// DropProviderEmbeddings drops all provider embeddings from the store
+	// NOTE: this must drop projections, too because keeping them would make no sense
+	DropProviderEmbeddings(ctx context.Context, uid string) error
+	// DropProviderProjections drops all provider projections from the store
+	DropProviderProjections(ctx context.Context, uid string) error
+	// ComputeProviderProjections drops existing projections and recomputes anew.
+	ComputeProviderProjections(ctx context.Context, uid string, projection Projection) (map[Dim][]Embedding, int, error)
 }

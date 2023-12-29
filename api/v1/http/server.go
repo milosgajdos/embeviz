@@ -9,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 	_ "github.com/milosgajdos/embeviz/api/v1/http/docs" // blank import for swagger docs
@@ -78,7 +77,8 @@ func NewServer(options ...Option) (*Server, error) {
 		app: fiber.New(c),
 	}
 
-	s.app.Use(recover.New())
+	// TODO: comment this out
+	//s.app.Use(recover.New())
 	s.app.Use(logger.New())
 	s.app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",

@@ -149,6 +149,32 @@ paths:
       tags:
       - providers
   /v1/providers/{uid}/embeddings:
+    delete:
+      description: Delete embeddings by provider UID. This also drops projections.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Provider embeddings deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Delete provider embeddings by UID.
+      tags:
+      - providers
     get:
       description: Returns embeddings for the provider with the given UID.
       parameters:
@@ -219,6 +245,32 @@ paths:
       tags:
       - providers
   /v1/providers/{uid}/projections:
+    delete:
+      description: Delete projections by provider UID.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Provider projections deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Delete provider projections by UID.
+      tags:
+      - providers
     get:
       description: Returns embedding projections for the provider with the given UID.
       parameters:
@@ -247,6 +299,44 @@ paths:
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
       summary: Get provider embedding projections by UID.
+      tags:
+      - providers
+    put:
+      consumes:
+      - application/json
+      description: Recompute provider projections.
+      parameters:
+      - description: Provider UID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Provider projections
+        in: body
+        name: provider
+        required: true
+        schema:
+          $ref: '#/definitions/v1.EmbeddingUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.Embedding'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Recompute embeddings projections for a provider by UID and return them
       tags:
       - providers
 swagger: "2.0"

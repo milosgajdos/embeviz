@@ -40,9 +40,11 @@ func PCA(embs []v1.Embedding, projDim v1.Dim) ([]v1.Embedding, error) {
 	proj.Mul(mx, vec.Slice(0, len(embs[0].Values), 0, dim))
 
 	for i := range embs {
+		metadata := maps.Clone(embs[i].Metadata)
+		metadata["projections"] = v1.PCA
 		pcas = append(pcas, v1.Embedding{
 			Values:   proj.RawRowView(i),
-			Metadata: maps.Clone(embs[i].Metadata),
+			Metadata: metadata,
 		})
 	}
 
