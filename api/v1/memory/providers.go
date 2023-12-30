@@ -10,8 +10,11 @@ import (
 )
 
 const (
+	// metadata keyspace
 	meta = "meta"
-	emb  = "embs"
+	// embeddings keyspace
+	emb = "embs"
+	// projection keyspace
 	proj = "proj"
 )
 
@@ -138,29 +141,24 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 			return nil, v1.Page{Count: &count},
 				v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
 		}
+
 		projStore := provider[proj].(map[v1.Dim][]v1.Embedding)
-		projections := projStore[*dim]
-		newProjections := make([]v1.Embedding, len(projections))
-		copy(newProjections, projections)
-		resProjs := applyOffsetLimit(newProjections, offset, filter.Limit).([]v1.Embedding)
+		newProjections := getDimProjections(projStore, *dim)
 		count = len(newProjections)
-		return map[v1.Dim][]v1.Embedding{*filter.Dim: resProjs}, v1.Page{Count: &count}, nil
+
+		return map[v1.Dim][]v1.Embedding{
+			*filter.Dim: applyOffsetLimit(newProjections, offset, filter.Limit).([]v1.Embedding),
+		}, v1.Page{Count: &count}, nil
 	}
 
 	projections := provider[proj].(map[v1.Dim][]v1.Embedding)
-	// 2D projections + paging
-	newProjections2D := make([]v1.Embedding, len(projections[v1.Dim2D]))
-	copy(newProjections2D, projections[v1.Dim2D])
-	res2DProjs := applyOffsetLimit(newProjections2D, offset, filter.Limit).([]v1.Embedding)
-	// 3D projections + paging
-	newProjections3D := make([]v1.Embedding, len(projections[v1.Dim3D]))
-	copy(newProjections3D, projections[v1.Dim3D])
-	res3DProjs := applyOffsetLimit(newProjections3D, offset, filter.Limit).([]v1.Embedding)
+	newProjections2D := getDimProjections(projections, v1.Dim2D)
+	newProjections3D := getDimProjections(projections, v1.Dim3D)
 	count = len(newProjections2D)
 
 	return map[v1.Dim][]v1.Embedding{
-		v1.Dim2D: res2DProjs,
-		v1.Dim3D: res3DProjs,
+		v1.Dim2D: applyOffsetLimit(newProjections2D, offset, filter.Limit).([]v1.Embedding),
+		v1.Dim3D: applyOffsetLimit(newProjections3D, offset, filter.Limit).([]v1.Embedding),
 	}, v1.Page{Count: &count}, nil
 }
 
@@ -311,4 +309,10 @@ func applyLimit(items reflect.Value, limit int) interface{} {
 		}
 	}
 	return items.Interface()
+}
+
+func getDimProjections(projections map[v1.Dim][]v1.Embedding, dim v1.Dim) []v1.Embedding {
+	newProjections := make([]v1.Embedding, len(projections[dim]))
+	copy(newProjections, projections[dim])
+	return newProjections
 }
