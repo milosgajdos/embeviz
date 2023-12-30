@@ -44,8 +44,8 @@ func TestGetAllProviders(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if ret.N != count {
-			t.Errorf("expected providers: %d, got: %d", count, ret.N)
+		if *ret.Page.Count != count {
+			t.Errorf("expected providers: %d, got: %d", count, *ret.Page.Count)
 		}
 	})
 
@@ -83,8 +83,8 @@ func TestGetAllProviders(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if ret.N != count {
-			t.Errorf("expected total providers: %d, got: %d", count, ret.N)
+		if *ret.Page.Count != count {
+			t.Errorf("expected total providers: %d, got: %d", count, *ret.Page.Count)
 		}
 
 		if n := len(ret.Providers); n != limit {
@@ -260,8 +260,8 @@ func TestGetProviderEmbeddings(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if ret.N != count {
-			t.Errorf("expected providers: %d, got: %d", count, ret.N)
+		if *ret.Page.Count != count {
+			t.Errorf("expected providers: %d, got: %d", count, *ret.Page.Count)
 		}
 	})
 
@@ -370,8 +370,8 @@ func TestGetProviderProjections(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if ret.N != count {
-			t.Errorf("expected providers: %d, got: %d", count, ret.N)
+		if *ret.Page.Count != count {
+			t.Errorf("expected providers: %d, got: %d", count, *ret.Page.Count)
 		}
 
 		// we should get both 2D and 2D projections back
@@ -417,8 +417,8 @@ func TestGetProviderProjections(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if ret.N != count {
-			t.Errorf("expected providers: %d, got: %d", count, ret.N)
+		if *ret.Page.Count != count {
+			t.Errorf("expected providers: %d, got: %d", count, *ret.Page.Count)
 		}
 
 		// we should only get 2D projections
@@ -545,8 +545,8 @@ func TestDropProviderEmbeddings(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if embRet.N != 0 {
-			t.Errorf("expected providers: %d, got: %d", 0, embRet.N)
+		if *embRet.Page.Count != 0 {
+			t.Errorf("expected providers: %d, got: %d", 0, *embRet.Page.Count)
 		}
 
 		// Verify no projections are returned for this provider
@@ -573,8 +573,8 @@ func TestDropProviderEmbeddings(t *testing.T) {
 			t.Fatalf("failed to decode body: %v", err)
 		}
 
-		if projRet.N != 0 {
-			t.Errorf("expected providers: %d, got: %d", 0, projRet.N)
+		if *projRet.Page.Count != 0 {
+			t.Errorf("expected providers: %d, got: %d", 0, *projRet.Page.Count)
 		}
 	})
 

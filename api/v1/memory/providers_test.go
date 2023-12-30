@@ -87,13 +87,13 @@ func TestGetProviders(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			px, n, err := ps.GetProviders(context.TODO(), tc.filter)
+			px, page, err := ps.GetProviders(context.TODO(), tc.filter)
 			if !tc.expErr && err != nil {
 				t.Fatal(err)
 			}
 
-			if n != tc.expMatches {
-				t.Errorf("expected providers: %d, got: %d", tc.expMatches, n)
+			if *page.Count != tc.expMatches {
+				t.Errorf("expected providers: %d, got: %d", tc.expMatches, *page.Count)
 			}
 
 			if tc.expRes != len(px) {
@@ -200,13 +200,13 @@ func TestGetProviderEmbeddings(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			px, n, err := ps.GetProviderEmbeddings(context.TODO(), p.UID, tc.filter)
+			px, page, err := ps.GetProviderEmbeddings(context.TODO(), p.UID, tc.filter)
 			if !tc.expErr && err != nil {
 				t.Fatal(err)
 			}
 
-			if n != tc.expMatches {
-				t.Errorf("expected embeddings: %d, got: %d", tc.expMatches, n)
+			if *page.Count != tc.expMatches {
+				t.Errorf("expected embeddings: %d, got: %d", tc.expMatches, *page.Count)
 			}
 
 			if tc.expRes != len(px) {
@@ -285,13 +285,13 @@ func TestGetProviderProjections(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			px, n, err := ps.GetProviderProjections(context.TODO(), p.UID, tc.filter)
+			px, page, err := ps.GetProviderProjections(context.TODO(), p.UID, tc.filter)
 			if !tc.expErr && err != nil {
 				t.Fatal(err)
 			}
 
-			if n != tc.expMatches {
-				t.Errorf("expected projections: %d, got: %d", tc.expMatches, n)
+			if *page.Count != tc.expMatches {
+				t.Errorf("expected projections: %d, got: %d", tc.expMatches, *page.Count)
 			}
 
 			// NOTE: we seed the data so we expect the filter seeds to be retrurned
@@ -386,7 +386,7 @@ func TestDropProviderEmbeddings(t *testing.T) {
 			t.Fatalf("expected error: %s", err)
 		}
 
-		px, n, err := ps.GetProviderProjections(context.TODO(), p.UID, v1.ProviderFilter{})
+		px, page, err := ps.GetProviderProjections(context.TODO(), p.UID, v1.ProviderFilter{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -399,11 +399,11 @@ func TestDropProviderEmbeddings(t *testing.T) {
 			t.Fatalf("expected no projections, got: %d", dim3D)
 		}
 
-		if n != 0 {
-			t.Fatalf("expected no projections, got: %d", n)
+		if *page.Count != 0 {
+			t.Fatalf("expected no projections, got: %d", page)
 		}
 
-		ex, n, err := ps.GetProviderEmbeddings(context.TODO(), p.UID, v1.ProviderFilter{})
+		ex, page, err := ps.GetProviderEmbeddings(context.TODO(), p.UID, v1.ProviderFilter{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -412,8 +412,8 @@ func TestDropProviderEmbeddings(t *testing.T) {
 			t.Fatalf("expected no projections, got: %d", len(ex))
 		}
 
-		if n != 0 {
-			t.Fatalf("expected no projections, got: %d", n)
+		if *page.Count != 0 {
+			t.Fatalf("expected no projections, got: %d", page)
 		}
 	})
 

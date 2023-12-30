@@ -54,18 +54,24 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 
 // GetProviders fetches all available providers.
 // nolint:revive
-func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderFilter) ([]*v1.Provider, int, error) {
+func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderFilter) ([]*v1.Provider, v1.Page, error) {
 	p.db.RLock()
 	defer p.db.RUnlock()
+	count := 0
 	if p.db.Closed {
-		return nil, 0, ErrDBClosed
+		return nil, v1.Page{Count: &count}, ErrDBClosed
 	}
 
 	px := make([]*v1.Provider, 0, len(p.db.store[meta]))
 	for _, p := range p.db.store {
 		px = append(px, p[meta].(*v1.Provider))
 	}
-	return applyOffsetLimit(px, filter.Offset, filter.Limit).([]*v1.Provider), len(px), nil
+	count = len(px)
+	offset, ok := filter.Offset.(int)
+	if !ok {
+		offset = 0
+	}
+	return applyOffsetLimit(px, offset, filter.Limit).([]*v1.Provider), v1.Page{Count: &count}, nil
 }
 
 // GetProviderByid fetches a specific provider by uid.
@@ -86,62 +92,76 @@ func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v
 
 // GetProviderEmbeddings fetches a specific provider embeddings.
 // nolint:revive
-func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string, filter v1.ProviderFilter) ([]v1.Embedding, int, error) {
+func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string, filter v1.ProviderFilter) ([]v1.Embedding, v1.Page, error) {
 	p.db.RLock()
 	defer p.db.RUnlock()
+	count := 0
 	if p.db.Closed {
-		return nil, 0, ErrDBClosed
+		return nil, v1.Page{Count: &count}, ErrDBClosed
 	}
 
 	provider, ok := p.db.store[uid]
 	if !ok {
-		return nil, 0, v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
 	}
 	embs := provider[emb].([]v1.Embedding)
 	newEmbs := make([]v1.Embedding, len(embs))
 	copy(newEmbs, embs)
-	return applyOffsetLimit(newEmbs, filter.Offset, filter.Limit).([]v1.Embedding), len(newEmbs), nil
+	count = len(newEmbs)
+	offset, ok := filter.Offset.(int)
+	if !ok {
+		offset = 0
+	}
+	return applyOffsetLimit(newEmbs, offset, filter.Limit).([]v1.Embedding), v1.Page{Count: &count}, nil
 }
 
 // GetProviderProjections fetches a specific provider projection.
 // nolint:revive
-func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid string, filter v1.ProviderFilter) (map[v1.Dim][]v1.Embedding, int, error) {
+func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid string, filter v1.ProviderFilter) (map[v1.Dim][]v1.Embedding, v1.Page, error) {
 	p.db.RLock()
 	defer p.db.RUnlock()
+	count := 0
 	if p.db.Closed {
-		return nil, 0, ErrDBClosed
+		return nil, v1.Page{Count: &count}, ErrDBClosed
 	}
 
 	provider, ok := p.db.store[uid]
 	if !ok {
-		return nil, 0, v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.ENOTFOUND, "provider %q not found", uid)
+	}
+	offset, ok := filter.Offset.(int)
+	if !ok {
+		offset = 0
 	}
 	if dim := filter.Dim; dim != nil {
 		if *dim != v1.Dim2D && *dim != v1.Dim3D {
-			return nil, 0, v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
+			return nil, v1.Page{Count: &count},
+				v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
 		}
 		projStore := provider[proj].(map[v1.Dim][]v1.Embedding)
 		projections := projStore[*dim]
 		newProjections := make([]v1.Embedding, len(projections))
 		copy(newProjections, projections)
-		resProjs := applyOffsetLimit(newProjections, filter.Offset, filter.Limit).([]v1.Embedding)
-		return map[v1.Dim][]v1.Embedding{*filter.Dim: resProjs}, len(newProjections), nil
+		resProjs := applyOffsetLimit(newProjections, offset, filter.Limit).([]v1.Embedding)
+		count = len(newProjections)
+		return map[v1.Dim][]v1.Embedding{*filter.Dim: resProjs}, v1.Page{Count: &count}, nil
 	}
 
 	projections := provider[proj].(map[v1.Dim][]v1.Embedding)
 	// 2D projections + paging
 	newProjections2D := make([]v1.Embedding, len(projections[v1.Dim2D]))
 	copy(newProjections2D, projections[v1.Dim2D])
-	res2DProjs := applyOffsetLimit(newProjections2D, filter.Offset, filter.Limit).([]v1.Embedding)
+	res2DProjs := applyOffsetLimit(newProjections2D, offset, filter.Limit).([]v1.Embedding)
 	// 3D projections + paging
 	newProjections3D := make([]v1.Embedding, len(projections[v1.Dim3D]))
 	copy(newProjections3D, projections[v1.Dim3D])
-	res3DProjs := applyOffsetLimit(newProjections3D, filter.Offset, filter.Limit).([]v1.Embedding)
+	res3DProjs := applyOffsetLimit(newProjections3D, offset, filter.Limit).([]v1.Embedding)
+	count = len(newProjections2D)
 
 	return map[v1.Dim][]v1.Embedding{
 		v1.Dim2D: res2DProjs,
 		v1.Dim3D: res3DProjs,
-	}, len(newProjections2D), nil
+	}, v1.Page{Count: &count}, nil
 }
 
 // UpdateProviderEmbeddings updates embeddings of a specific provider.

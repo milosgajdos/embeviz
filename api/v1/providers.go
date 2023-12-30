@@ -49,7 +49,7 @@ type ProviderFilter struct {
 	// Filtering fields.
 	Dim *Dim `json:"dim"`
 	// Restrict to subset of range.
-	Offset int `json:"offset"`
+	Offset any `json:"offset"`
 	Limit  int `json:"limit"`
 }
 
@@ -72,13 +72,13 @@ type ProvidersService interface {
 	// AddProvider creates a new provider and returns it.
 	AddProvider(ctx context.Context, name string, metadata map[string]any) (*Provider, error)
 	// GetProviders returns a list of providers filtered by filter.
-	GetProviders(ctx context.Context, filter ProviderFilter) ([]*Provider, int, error)
+	GetProviders(ctx context.Context, filter ProviderFilter) ([]*Provider, Page, error)
 	// GetProviderByUID returns the provider with the given uuid.
 	GetProviderByUID(ctx context.Context, uid string) (*Provider, error)
 	// GetProviderEmbeddings returns embeddings for the provider with the given uid.
-	GetProviderEmbeddings(ctx context.Context, uid string, filter ProviderFilter) ([]Embedding, int, error)
+	GetProviderEmbeddings(ctx context.Context, uid string, filter ProviderFilter) ([]Embedding, Page, error)
 	// GetProviderProjections returns embeddings projections for the provider with the given uid.
-	GetProviderProjections(ctx context.Context, uid string, filter ProviderFilter) (map[Dim][]Embedding, int, error)
+	GetProviderProjections(ctx context.Context, uid string, filter ProviderFilter) (map[Dim][]Embedding, Page, error)
 	// UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
 	UpdateProviderEmbeddings(ctx context.Context, uid string, update Embedding, projection Projection) (*Embedding, error)
 	// DropProviderEmbeddings drops all provider embeddings from the store
