@@ -1,7 +1,6 @@
 package qdrant
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"strings"
@@ -29,9 +28,8 @@ type DB struct {
 	col pb.CollectionsClient
 	// points client
 	pts pb.PointsClient
-	// auth context
-	ctx    context.Context // background context
-	cancel func()          // cancel background context
+	// metadata
+	md metadata.MD
 }
 
 // NewDB creates a new DB and returns it.
@@ -47,10 +45,11 @@ func NewDB(dsn string) (*DB, error) {
 
 // Open opens the database connection.
 func (db *DB) Open() (err error) {
-	scheme, path, ok := strings.Cut(db.DSN, "://")
-	if !ok {
-		return ErrInvalidDSN
+	scheme, authKey, hostAddr, err := parseDSN(db.DSN)
+	if err != nil {
+		return err
 	}
+
 	var dialOpts []grpc.DialOption
 	switch scheme {
 	case "qdrant://":
@@ -62,23 +61,12 @@ func (db *DB) Open() (err error) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	authKey, hostAddr, ok := strings.Cut(path, "@")
-	if !ok {
-		return ErrInvalidDSN
-	}
-
-	// NOTE: we could support the default localhost here: localhost:6334
-	if hostAddr == "" {
-		return ErrInvalidDSN
-	}
-
-	db.ctx, db.cancel = context.WithCancel(context.Background())
-
 	// NOTE: we expect this to be an API key for qdrant cloud.
 	// if it's set we update the connection context with auth details.
 	if authKey != "" {
-		md := metadata.New(map[string]string{"api-key": authKey})
-		db.ctx = metadata.NewOutgoingContext(db.ctx, md)
+		db.md = metadata.New(map[string]string{
+			"api-key": authKey,
+		})
 	}
 
 	conn, err := grpc.Dial(hostAddr, dialOpts...)
@@ -94,12 +82,36 @@ func (db *DB) Open() (err error) {
 
 // Close closes the database connection.
 func (db *DB) Close() error {
-	// Cancel background context.
-	db.cancel()
-
 	// Close database.
 	if db.conn != nil {
 		return db.conn.Close()
 	}
 	return nil
+}
+
+func parseDSN(dsn string) (scheme, authKey, hostAddr string, err error) {
+	var (
+		ok   bool
+		path string
+	)
+
+	scheme, path, ok = strings.Cut(dsn, "://")
+	if !ok {
+		err = ErrInvalidDSN
+		return
+	}
+
+	authKey, hostAddr, ok = strings.Cut(path, "@")
+	if !ok {
+		err = ErrInvalidDSN
+		return
+	}
+
+	// NOTE: maybe we could init this to localhost:6333 by default
+	// instead of returning error
+	if hostAddr == "" {
+		err = ErrInvalidDSN
+		return
+	}
+	return
 }
