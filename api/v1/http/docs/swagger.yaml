@@ -43,12 +43,26 @@ definitions:
         items:
           $ref: '#/definitions/v1.Embedding'
         type: array
-      "n":
-        type: integer
+      page:
+        $ref: '#/definitions/v1.Page'
     type: object
   v1.ErrorResponse:
     properties:
       error:
+        type: string
+    type: object
+  v1.Page:
+    properties:
+      count:
+        description: |-
+          Count is number of all
+          results if provided.
+        type: integer
+      next:
+        description: |-
+          Next is either a number
+          or a string ID which allows
+          resuming paging if provided.
         type: string
     type: object
   v1.Projection:
@@ -67,8 +81,8 @@ definitions:
             $ref: '#/definitions/v1.Embedding'
           type: array
         type: object
-      "n":
-        type: integer
+      page:
+        $ref: '#/definitions/v1.Page'
     type: object
   v1.Provider:
     properties:
@@ -85,8 +99,8 @@ definitions:
     type: object
   v1.ProvidersResponse:
     properties:
-      "n":
-        type: integer
+      page:
+        $ref: '#/definitions/v1.Page'
       providers:
         items:
           $ref: '#/definitions/v1.Provider'

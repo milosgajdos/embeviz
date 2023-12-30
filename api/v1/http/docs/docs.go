@@ -432,8 +432,8 @@ const docTemplate = `{
                         "$ref": "#/definitions/v1.Embedding"
                     }
                 },
-                "n": {
-                    "type": "integer"
+                "page": {
+                    "$ref": "#/definitions/v1.Page"
                 }
             }
         },
@@ -441,6 +441,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.Page": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "description": "Count is number of all\nresults if provided.",
+                    "type": "integer"
+                },
+                "next": {
+                    "description": "Next is either a number\nor a string ID which allows\nresuming paging if provided.",
                     "type": "string"
                 }
             }
@@ -468,8 +481,8 @@ const docTemplate = `{
                         }
                     }
                 },
-                "n": {
-                    "type": "integer"
+                "page": {
+                    "$ref": "#/definitions/v1.Page"
                 }
             }
         },
@@ -494,8 +507,8 @@ const docTemplate = `{
         "v1.ProvidersResponse": {
             "type": "object",
             "properties": {
-                "n": {
-                    "type": "integer"
+                "page": {
+                    "$ref": "#/definitions/v1.Page"
                 },
                 "providers": {
                     "type": "array",

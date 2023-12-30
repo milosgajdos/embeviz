@@ -56,7 +56,7 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 		filter.Limit = limit
 	}
 
-	providers, n, err := s.ProvidersService.GetProviders(context.TODO(), filter)
+	providers, page, err := s.ProvidersService.GetProviders(context.TODO(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
 			Error: err.Error(),
@@ -65,7 +65,7 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 
 	return c.JSON(v1.ProvidersResponse{
 		Providers: providers,
-		N:         n,
+		Page:      page,
 	})
 }
 
@@ -140,7 +140,7 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 		filter.Limit = limit
 	}
 
-	embeddings, n, err := s.ProvidersService.GetProviderEmbeddings(context.TODO(), uid.String(), filter)
+	embeddings, page, err := s.ProvidersService.GetProviderEmbeddings(context.TODO(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -155,7 +155,7 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 
 	return c.JSON(v1.EmbeddingsResponse{
 		Embeddings: embeddings,
-		N:          n,
+		Page:       page,
 	})
 }
 
@@ -204,7 +204,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 		}
 	}
 
-	projections, n, err := s.ProvidersService.GetProviderProjections(context.TODO(), uid.String(), filter)
+	projections, page, err := s.ProvidersService.GetProviderProjections(context.TODO(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -219,7 +219,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 
 	return c.JSON(v1.ProjectionsResponse{
 		Projections: projections,
-		N:           n,
+		Page:        page,
 	})
 }
 
