@@ -105,7 +105,7 @@ func (c *HTTPClient) AliasUpdate(ctx context.Context, actions []Action) error {
 
 // AliasList action.
 func (c *HTTPClient) AliasList(ctx context.Context, collName string) (*AliasesResp, error) {
-	u, err := url.Parse(c.opts.BaseURL + "/collections" + collName + "/aliases")
+	u, err := url.Parse(c.opts.BaseURL + "/collections/" + collName + "/aliases")
 	if err != nil {
 		return nil, err
 	}

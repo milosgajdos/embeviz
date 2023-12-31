@@ -238,13 +238,72 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 // DropProviderEmbeddings drops all provider embeddings from the store
 // nolint:revive
 func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
-	// TODO:
-	// * fetch an alias
-	// * drop alias
+	// * retrieven collection
+	// * grab the vector config
+	col, err := p.db.col.Get(ctx, &pb.GetCollectionInfoRequest{CollectionName: uid})
+	if err != nil {
+		return err
+	}
+	vecConfig := col.Result.Config.Params.GetVectorsConfig()
+
+	// * fetch aliases
+	resp, err := p.db.httpClient.AliasList(ctx, uid)
+	if err != nil {
+		return err
+	}
+
+	aliases := make([]string, 0, len(resp.Result.Aliases))
+	for _, alias := range resp.Result.Aliases {
+		// * drop all aliases for this collection
+		actions := []Action{
+			{
+				"delete_alias": {
+					"alias_name": alias.Name,
+				},
+			},
+		}
+		if err := p.db.httpClient.AliasUpdate(ctx, actions); err != nil {
+			return err
+		}
+		aliases = append(aliases, alias.Name)
+	}
+
 	// * drop collection
+	if _, err := p.db.col.Delete(ctx, &pb.DeleteCollection{
+		CollectionName: uid,
+	}); err != nil {
+		return err
+	}
+
 	// * create new collection
-	// * create alias
-	return v1.Errorf(v1.ENOTIMPLEMENTED, "DropProviderEmbeddings")
+	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+	if _, err = p.db.col.Create(ctx, &pb.CreateCollection{
+		CollectionName: uid,
+		VectorsConfig:  vecConfig,
+		OptimizersConfig: &pb.OptimizersConfigDiff{
+			DefaultSegmentNumber: &defaultSegmentNumber,
+		},
+	}); err != nil {
+		return err
+	}
+
+	// * create aliases (use alias.Name for the alias name)
+	for _, name := range aliases {
+		// Create an alias for the uid collection with the given name.
+		actions := []Action{
+			{
+				"create_alias": {
+					"collection_name": uid,
+					"alias_name":      name,
+				},
+			},
+		}
+		if err := p.db.httpClient.AliasUpdate(ctx, actions); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // ComputeProviderProjections drops existing projections and recomputes anew.
