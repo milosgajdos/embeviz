@@ -67,8 +67,8 @@ func WithHTTPClient(httpClient *http.Client) Option {
 	}
 }
 
-// AliasUpdate action (Create, Remove, Switch)
-func (c *HTTPClient) AliasUpdate(ctx context.Context, actions []Action) error {
+// UpdateAliases action (Create, Remove, Switch)
+func (c *HTTPClient) UpdateAliases(ctx context.Context, actions []Action) error {
 	u, err := url.Parse(c.opts.BaseURL + "/collections/aliases")
 	if err != nil {
 		return err

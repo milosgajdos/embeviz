@@ -2,10 +2,10 @@ package memory
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
+	"github.com/milosgajdos/embeviz/api/v1/internal/paging"
 	"github.com/milosgajdos/embeviz/api/v1/internal/projection"
 )
 
@@ -74,7 +74,7 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 	if !ok {
 		offset = 0
 	}
-	return applyOffsetLimit(px, offset, filter.Limit).([]*v1.Provider), v1.Page{Count: &count}, nil
+	return paging.ApplyOffsetLimit(px, offset, filter.Limit).([]*v1.Provider), v1.Page{Count: &count}, nil
 }
 
 // GetProviderByid fetches a specific provider by uid.
@@ -115,7 +115,7 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 	if !ok {
 		offset = 0
 	}
-	return applyOffsetLimit(newEmbs, offset, filter.Limit).([]v1.Embedding), v1.Page{Count: &count}, nil
+	return paging.ApplyOffsetLimit(newEmbs, offset, filter.Limit).([]v1.Embedding), v1.Page{Count: &count}, nil
 }
 
 // GetProviderProjections fetches a specific provider projection.
@@ -147,7 +147,7 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		count = len(newProjections)
 
 		return map[v1.Dim][]v1.Embedding{
-			*filter.Dim: applyOffsetLimit(newProjections, offset, filter.Limit).([]v1.Embedding),
+			*filter.Dim: paging.ApplyOffsetLimit(newProjections, offset, filter.Limit).([]v1.Embedding),
 		}, v1.Page{Count: &count}, nil
 	}
 
@@ -157,8 +157,8 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 	count = len(newProjections2D)
 
 	return map[v1.Dim][]v1.Embedding{
-		v1.Dim2D: applyOffsetLimit(newProjections2D, offset, filter.Limit).([]v1.Embedding),
-		v1.Dim3D: applyOffsetLimit(newProjections3D, offset, filter.Limit).([]v1.Embedding),
+		v1.Dim2D: paging.ApplyOffsetLimit(newProjections2D, offset, filter.Limit).([]v1.Embedding),
+		v1.Dim3D: paging.ApplyOffsetLimit(newProjections3D, offset, filter.Limit).([]v1.Embedding),
 	}, v1.Page{Count: &count}, nil
 }
 
@@ -271,53 +271,6 @@ func computeProjections(embs []v1.Embedding, prj v1.Projection) (map[v1.Dim][]v1
 		v1.Dim3D: proj3D,
 	}, nil
 }
-
-// applyOffsetLimit applies offset and limit to items and returns the result.
-func applyOffsetLimit(items interface{}, offset int, limit int) interface{} {
-	val := reflect.ValueOf(items)
-	o := applyOffset(val, offset)
-	if reflect.ValueOf(o).Len() == 0 {
-		// NOTE: we could return Zero value here,
-		// reflect.Zero(reflect.TypeOf(val.Interface())).Interface()
-		// but we prefer to return an empty slice.
-		return reflect.MakeSlice(val.Type(), 0, 0).Interface()
-	}
-	return applyLimit(reflect.ValueOf(o), limit)
-}
-
-// applyOffset returns a slice of items skipped by offset.
-// If offset is negative, it returns the original slice.
-// If offset is bigger than the number of items it returns empty slice.
-func applyOffset(items reflect.Value, offset int) interface{} {
-	if offset > 0 {
-		switch {
-		case items.Len() >= offset:
-			return items.Slice(offset, items.Len()).Interface()
-		default:
-			// NOTE: we could return Zero value of items here,
-			// return reflect.Zero(reflect.TypeOf(items.Interface())).Interface()
-			// but we prefer to return an empty slice.
-			return reflect.MakeSlice(reflect.TypeOf(items.Interface()), 0, 0).Interface()
-		}
-	}
-	return items.Interface()
-}
-
-// applyLimit returns limit number of items.
-// If limit is either negative or bigger than
-// the number of items it returns all items.
-func applyLimit(items reflect.Value, limit int) interface{} {
-	if limit > 0 {
-		switch {
-		case items.Len() >= limit:
-			return items.Slice(0, limit).Interface()
-		default:
-			return items.Interface()
-		}
-	}
-	return items.Interface()
-}
-
 func getDimProjections(projections map[v1.Dim][]v1.Embedding, dim v1.Dim) []v1.Embedding {
 	newProjections := make([]v1.Embedding, len(projections[dim]))
 	copy(newProjections, projections[dim])

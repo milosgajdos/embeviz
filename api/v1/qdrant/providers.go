@@ -3,9 +3,11 @@ package qdrant
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
+	"github.com/milosgajdos/embeviz/api/v1/internal/paging"
 	pb "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc/metadata"
 )
@@ -69,16 +71,18 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 		return nil, err
 	}
 
-	// Create an alias for the uid collection with the given name.
-	actions := []Action{
+	createAliases := []*pb.AliasOperations{
 		{
-			"create_alias": {
-				"collection_name": uid,
-				"alias_name":      name,
+			Action: &pb.AliasOperations_CreateAlias{
+				CreateAlias: &pb.CreateAlias{
+					CollectionName: uid,
+					AliasName:      name,
+				},
 			},
 		},
 	}
-	if err := p.db.httpClient.AliasUpdate(ctx, actions); err != nil {
+
+	if _, err := p.db.col.UpdateAliases(ctx, &pb.ChangeAliases{Actions: createAliases}); err != nil {
 		return nil, err
 	}
 
@@ -90,17 +94,62 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 }
 
 // GetProviders returns a list of providers filtered by filter.
-// nolint:revive
-func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderFilter) ([]*v1.Provider, int, error) {
-	// TODO: requires collection alias
-	return nil, 0, v1.Errorf(v1.ENOTIMPLEMENTED, "GetProviders")
+func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderFilter) ([]*v1.Provider, v1.Page, error) {
+	count := 0
+	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+
+	resp, err := p.db.col.ListAliases(ctx, &pb.ListAliasesRequest{})
+	if err != nil {
+		return nil, v1.Page{Count: &count}, err
+	}
+
+	providers := map[string]string{}
+
+	for _, a := range resp.Aliases {
+		fmt.Println("Collection", a.CollectionName)
+		if _, ok := providers[a.CollectionName]; ok {
+			continue
+		}
+		providers[a.CollectionName] = a.AliasName
+	}
+
+	px := make([]*v1.Provider, 0, len(providers))
+	for uid, alias := range providers {
+		px = append(px, &v1.Provider{
+			UID:  uid,
+			Name: alias,
+		})
+	}
+	count = len(px)
+
+	offset, ok := filter.Offset.(int)
+	if !ok {
+		offset = 0
+	}
+
+	return paging.ApplyOffsetLimit(px, offset, filter.Limit).([]*v1.Provider), v1.Page{Count: &count}, nil
 }
 
-// GetProviderByUID returns the provider with the given uuid.
-// nolint:revive
+// GetProviderByUID returns the provider with the given uid.
 func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v1.Provider, error) {
-	// TODO: requires collection alias
-	return nil, v1.Errorf(v1.ENOTIMPLEMENTED, "GetProviderByUID")
+	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+
+	// * fetch aliases for the given collection
+	resp, err := p.db.httpClient.AliasList(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	var alias string
+	if len(resp.Result.Aliases) == 0 {
+		return nil, v1.Errorf(v1.ENOTFOUND, "provider %s not found", uid)
+	}
+	alias = resp.Result.Aliases[0].Name
+
+	return &v1.Provider{
+		UID:  uid,
+		Name: alias,
+	}, nil
 }
 
 // GetProviderEmbeddings returns embeddings for the provider with the given uid.
@@ -238,6 +287,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 // DropProviderEmbeddings drops all provider embeddings from the store
 // nolint:revive
 func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
+	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	// * retrieven collection
 	// * grab the vector config
 	col, err := p.db.col.Get(ctx, &pb.GetCollectionInfoRequest{CollectionName: uid})
@@ -252,20 +302,28 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 		return err
 	}
 
-	aliases := make([]string, 0, len(resp.Result.Aliases))
+	// actions for deleting aliases
+	deleteAliases := make([]*pb.AliasOperations, 0, len(resp.Result.Aliases))
+	// actions for re-creating aliases
+	createAliases := make([]*pb.AliasOperations, 0, len(resp.Result.Aliases))
+
 	for _, alias := range resp.Result.Aliases {
-		// * drop all aliases for this collection
-		actions := []Action{
-			{
-				"delete_alias": {
-					"alias_name": alias.Name,
+		deleteAliases = append(deleteAliases, &pb.AliasOperations{
+			Action: &pb.AliasOperations_DeleteAlias{
+				DeleteAlias: &pb.DeleteAlias{AliasName: alias.Name},
+			},
+		})
+		createAliases = append(createAliases, &pb.AliasOperations{
+			Action: &pb.AliasOperations_CreateAlias{
+				CreateAlias: &pb.CreateAlias{
+					CollectionName: uid,
+					AliasName:      alias.Name,
 				},
 			},
-		}
-		if err := p.db.httpClient.AliasUpdate(ctx, actions); err != nil {
-			return err
-		}
-		aliases = append(aliases, alias.Name)
+		})
+	}
+	if _, err := p.db.col.UpdateAliases(ctx, &pb.ChangeAliases{Actions: deleteAliases}); err != nil {
+		return err
 	}
 
 	// * drop collection
@@ -276,7 +334,6 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 	}
 
 	// * create new collection
-	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	if _, err = p.db.col.Create(ctx, &pb.CreateCollection{
 		CollectionName: uid,
 		VectorsConfig:  vecConfig,
@@ -287,20 +344,8 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 		return err
 	}
 
-	// * create aliases (use alias.Name for the alias name)
-	for _, name := range aliases {
-		// Create an alias for the uid collection with the given name.
-		actions := []Action{
-			{
-				"create_alias": {
-					"collection_name": uid,
-					"alias_name":      name,
-				},
-			},
-		}
-		if err := p.db.httpClient.AliasUpdate(ctx, actions); err != nil {
-			return err
-		}
+	if _, err := p.db.col.UpdateAliases(ctx, &pb.ChangeAliases{Actions: createAliases}); err != nil {
+		return err
 	}
 
 	return nil
