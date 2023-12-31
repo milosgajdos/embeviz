@@ -3,6 +3,7 @@ package qdrant
 import (
 	"crypto/tls"
 	"errors"
+	"os"
 	"strings"
 
 	pb "github.com/qdrant/go-client/qdrant"
@@ -30,6 +31,9 @@ type DB struct {
 	pts pb.PointsClient
 	// metadata
 	md metadata.MD
+	// TODO: here to handle API endpoints
+	// which are not yet supported by gRPC
+	httpClient *HTTPClient
 }
 
 // NewDB creates a new DB and returns it.
@@ -45,11 +49,16 @@ func NewDB(dsn string) (*DB, error) {
 
 // Open opens the database connection.
 func (db *DB) Open() (err error) {
+	if db.DSN == "" {
+		return ErrMissingDSN
+	}
+
 	scheme, authKey, hostAddr, err := parseDSN(db.DSN)
 	if err != nil {
 		return err
 	}
 
+	// TODO: build HTTP API Base URL here and pass it to the HTTP API client.
 	var dialOpts []grpc.DialOption
 	switch scheme {
 	case "qdrant://":
@@ -61,8 +70,11 @@ func (db *DB) Open() (err error) {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// NOTE: we expect this to be an API key for qdrant cloud.
+	// NOTE: we expect this to be an API key for the qdrant cloud.
 	// if it's set we update the connection context with auth details.
+	if authKey == "" {
+		authKey = os.Getenv("QDRANT_API_KEY")
+	}
 	if authKey != "" {
 		db.md = metadata.New(map[string]string{
 			"api-key": authKey,
@@ -76,6 +88,8 @@ func (db *DB) Open() (err error) {
 	db.conn = conn
 	db.col = pb.NewCollectionsClient(conn)
 	db.pts = pb.NewPointsClient(conn)
+
+	db.httpClient = NewHTTPClient() // TODO: pass options
 
 	return nil
 }
@@ -107,7 +121,7 @@ func parseDSN(dsn string) (scheme, authKey, hostAddr string, err error) {
 		return
 	}
 
-	// NOTE: maybe we could init this to localhost:6333 by default
+	// NOTE: maybe we could init this to localhost:6334 by default
 	// instead of returning error
 	if hostAddr == "" {
 		err = ErrInvalidDSN

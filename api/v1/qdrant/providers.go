@@ -69,7 +69,18 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 		return nil, err
 	}
 
-	// TODO: create alias
+	// Create an alias for the uid collection with the given name.
+	actions := []Action{
+		{
+			"create_alias": {
+				"collection_name": uid,
+				"alias_name":      name,
+			},
+		},
+	}
+	if err := p.db.httpClient.AliasUpdate(ctx, actions); err != nil {
+		return nil, err
+	}
 
 	return &v1.Provider{
 		UID:      uid,
