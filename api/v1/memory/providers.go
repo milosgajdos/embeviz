@@ -180,7 +180,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	copy(newEmbs, embs)
 	newEmbs = append(newEmbs, embed)
 
-	prjs, err := computeProjections(newEmbs, prj)
+	prjs, err := projection.Compute(newEmbs, prj)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 	}
 	embs := provider[emb].([]v1.Embedding)
 
-	prjs, err := computeProjections(embs, prj)
+	prjs, err := projection.Compute(embs, prj)
 	if err != nil {
 		return err
 	}
@@ -236,41 +236,6 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 	return nil
 }
 
-func computeProjections(embs []v1.Embedding, prj v1.Projection) (map[v1.Dim][]v1.Embedding, error) {
-	var (
-		err    error
-		proj2D []v1.Embedding
-		proj3D []v1.Embedding
-	)
-	// Calculate projection
-	switch prj {
-	case v1.PCA:
-		proj2D, err = projection.PCA(embs, v1.Dim2D)
-		if err != nil {
-			return nil, err
-		}
-		proj3D, err = projection.PCA(embs, v1.Dim3D)
-		if err != nil {
-			return nil, err
-		}
-	case v1.TSNE:
-		proj2D, err = projection.TSNE(embs, v1.Dim2D)
-		if err != nil {
-			return nil, err
-		}
-		proj3D, err = projection.TSNE(embs, v1.Dim3D)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, v1.Errorf(v1.EINVALID, "invalid projection: %v", proj)
-
-	}
-	return map[v1.Dim][]v1.Embedding{
-		v1.Dim2D: proj2D,
-		v1.Dim3D: proj3D,
-	}, nil
-}
 func getDimProjections(projections map[v1.Dim][]v1.Embedding, dim v1.Dim) []v1.Embedding {
 	newProjections := make([]v1.Embedding, len(projections[dim]))
 	copy(newProjections, projections[dim])

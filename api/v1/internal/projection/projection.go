@@ -108,3 +108,40 @@ func TSNE(embs []v1.Embedding, projDim v1.Dim) ([]v1.Embedding, error) {
 
 	return tsnes, nil
 }
+
+// Compute computes p projections for embeddings embs and returns them.
+func Compute(embs []v1.Embedding, p v1.Projection) (map[v1.Dim][]v1.Embedding, error) {
+	var (
+		err    error
+		proj2D []v1.Embedding
+		proj3D []v1.Embedding
+	)
+	// Calculate projection
+	switch p {
+	case v1.PCA:
+		proj2D, err = PCA(embs, v1.Dim2D)
+		if err != nil {
+			return nil, err
+		}
+		proj3D, err = PCA(embs, v1.Dim3D)
+		if err != nil {
+			return nil, err
+		}
+	case v1.TSNE:
+		proj2D, err = TSNE(embs, v1.Dim2D)
+		if err != nil {
+			return nil, err
+		}
+		proj3D, err = TSNE(embs, v1.Dim3D)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, v1.Errorf(v1.EINVALID, "invalid projection: %v", p)
+
+	}
+	return map[v1.Dim][]v1.Embedding{
+		v1.Dim2D: proj2D,
+		v1.Dim3D: proj3D,
+	}, nil
+}

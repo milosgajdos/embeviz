@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 	"github.com/milosgajdos/embeviz/api/v1/internal/paging"
+	"github.com/milosgajdos/embeviz/api/v1/internal/projection"
 	pb "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc/metadata"
 )
@@ -153,8 +154,7 @@ func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v
 }
 
 // GetProviderEmbeddings returns embeddings for the provider with the given uid.
-// nolint:revive
-func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string, filter v1.ProviderFilter) ([]v1.Embedding, int, error) {
+func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string, filter v1.ProviderFilter) ([]v1.Embedding, v1.Page, error) {
 	req := &pb.ScrollPoints{
 		CollectionName: uid,
 		WithVectors: &pb.WithVectorsSelector{
@@ -176,35 +176,35 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 		req.Limit = &limit
 	}
 
+	count := 0
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	resp, err := p.db.pts.Scroll(ctx, req)
 	if err != nil {
-		return nil, 0, err
+		return nil, v1.Page{Count: &count}, err
 	}
+	next := resp.NextPageOffset.String()
 
 	points := resp.GetResult()
 	embs := make([]v1.Embedding, len(points))
 
 	for _, p := range points {
-		// NOTE: we call GetVectors twice because we use
-		// NamedVectors so we need to dig in 2 levels down.
-		vecs := p.GetVectors().GetVectors()
-		vecVals := vecs.Vectors["embs"].Data
-		embVals := make([]float64, len(vecVals))
-		for _, val := range vecVals {
-			embVals = append(embVals, float64(val))
+		vec := p.GetVectors().GetVector()
+		// TODO: grab metadata from p.Payload
+		vals := make([]float64, 0, len(vec.Data))
+		for _, val := range vec.Data {
+			vals = append(vals, float64(val))
 		}
 		embs = append(embs, v1.Embedding{
-			Values: embVals,
+			UID:    p.Id.String(),
+			Values: vals,
 		})
 	}
 
-	return embs, 0, v1.Errorf(v1.ENOTIMPLEMENTED, "GetProviderEmbeddings")
+	return embs, v1.Page{Next: &next}, nil
 }
 
 // GetProviderProjections returns embeddings projections for the provider with the given uid.
-// nolint:revive
-func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid string, filter v1.ProviderFilter) (map[v1.Dim][]v1.Embedding, int, error) {
+func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid string, filter v1.ProviderFilter) (map[v1.Dim][]v1.Embedding, v1.Page, error) {
 	req := &pb.ScrollPoints{
 		CollectionName: uid,
 		WithVectors: &pb.WithVectorsSelector{
@@ -226,17 +226,20 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		req.Limit = &limit
 	}
 
+	count := 0
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	resp, err := p.db.pts.Scroll(ctx, req)
 	if err != nil {
-		return nil, 0, err
+		return nil, v1.Page{Count: &count}, err
 	}
+	next := resp.NextPageOffset.String()
 
 	points := resp.GetResult()
 
 	if dim := filter.Dim; dim != nil {
 		if *dim != v1.Dim2D && *dim != v1.Dim3D {
-			return nil, 0, v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
+			return nil, v1.Page{Count: &count},
+				v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
 		}
 		projs := make([]v1.Embedding, len(points))
 
@@ -244,12 +247,14 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 			// NOTE: we call GetVectors twice because we use
 			// NamedVectors so we need to dig in 2 levels down.
 			vecs := p.GetVectors().GetVectors()
-			vals := getVecDimVals(vecs, *dim)
-			projs = append(projs, v1.Embedding{
-				Values: vals,
-			})
+			if vecs != nil {
+				vals := getNamedVecVals(vecs, string(*dim))
+				projs = append(projs, v1.Embedding{
+					Values: vals,
+				})
+			}
 		}
-		return map[v1.Dim][]v1.Embedding{*filter.Dim: projs}, 0, v1.Errorf(v1.ENOTIMPLEMENTED, "GetProviderEmbeddings")
+		return map[v1.Dim][]v1.Embedding{*filter.Dim: projs}, v1.Page{Next: &next}, nil
 	}
 
 	res2DProjs := make([]v1.Embedding, len(points))
@@ -259,29 +264,110 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		// NOTE: we call GetVectors twice because we use
 		// NamedVectors so we need to dig in 2 levels down.
 		vecs := p.GetVectors().GetVectors()
-
-		proj2DVals := getVecDimVals(vecs, v1.Dim2D)
-		res2DProjs = append(res2DProjs, v1.Embedding{
-			Values: proj2DVals,
-		})
-
-		proj3DVals := getVecDimVals(vecs, v1.Dim3D)
-		res3DProjs = append(res3DProjs, v1.Embedding{
-			Values: proj3DVals,
-		})
+		// skip if no named vectors exist for this point
+		// this means there are no projections for this embedding.
+		if vecs != nil {
+			// 2D projections
+			proj2DVals := getNamedVecVals(vecs, string(v1.Dim2D))
+			res2DProjs = append(res2DProjs, v1.Embedding{
+				Values: proj2DVals,
+			})
+			// 3D projections
+			proj3DVals := getNamedVecVals(vecs, string(v1.Dim3D))
+			res3DProjs = append(res3DProjs, v1.Embedding{
+				Values: proj3DVals,
+			})
+		}
 	}
-
 	return map[v1.Dim][]v1.Embedding{
 		v1.Dim2D: res2DProjs,
 		v1.Dim3D: res3DProjs,
-	}, 0, v1.Errorf(v1.ENOTIMPLEMENTED, "GetProviderEmbeddings")
+	}, v1.Page{Next: &next}, nil
 }
 
 // UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
-// nolint:revive
-func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, update v1.Embedding, proj v1.Projection) (*v1.Embedding, error) {
-	// TODO: need to modify points https://qdrant.tech/documentation/concepts/points/#modify-points
-	return nil, v1.Errorf(v1.ENOTIMPLEMENTED, "UpdateProviderEmbeddings")
+func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embed v1.Embedding, proj v1.Projection) (*v1.Embedding, error) {
+	// fetch all points so we can compute PCA
+	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+	req := &pb.ScrollPoints{
+		CollectionName: uid,
+		WithVectors: &pb.WithVectorsSelector{
+			SelectorOptions: &pb.WithVectorsSelector_Enable{
+				Enable: true,
+			},
+		},
+		WithPayload: &pb.WithPayloadSelector{
+			SelectorOptions: &pb.WithPayloadSelector_Enable{
+				Enable: true,
+			},
+		},
+	}
+
+	embs := []v1.Embedding{}
+	for {
+		resp, err := p.db.pts.Scroll(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		next := resp.NextPageOffset
+
+		for _, p := range resp.GetResult() {
+			vec := p.GetVectors().GetVector()
+			// TODO: grab metadata from p.Payload
+			vals := make([]float64, 0, len(vec.Data))
+			for _, val := range vec.Data {
+				vals = append(vals, float64(val))
+			}
+			embs = append(embs, v1.Embedding{
+				UID:    p.Id.String(),
+				Values: vals,
+			})
+		}
+		// stop paging we're done
+		if next == nil {
+			break
+		}
+		req.Offset = next
+	}
+
+	projs, err := projection.Compute(embs, proj)
+	if err != nil {
+		return nil, err
+	}
+
+	points := make([]*pb.PointStruct, 0, len(projs))
+	waitUpsert := true
+
+	for dim, dimProjs := range projs {
+		for i := range dimProjs {
+			data := make([]float32, 0, len(dimProjs[i].Values))
+			for _, val := range dimProjs[i].Values {
+				data = append(data, float32(val))
+			}
+			points = append(points, &pb.PointStruct{
+				Id: &pb.PointId{
+					PointIdOptions: &pb.PointId_Uuid{Uuid: embs[i].UID},
+				},
+				Vectors: &pb.Vectors{VectorsOptions: &pb.Vectors_Vectors{
+					Vectors: &pb.NamedVectors{
+						Vectors: map[string]*pb.Vector{
+							string(dim): {Data: data},
+						},
+					},
+				}},
+			})
+		}
+	}
+
+	if _, err := p.db.pts.Upsert(ctx, &pb.UpsertPoints{
+		CollectionName: uid,
+		Wait:           &waitUpsert,
+		Points:         points,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &embed, nil
 }
 
 // DropProviderEmbeddings drops all provider embeddings from the store

@@ -14,6 +14,8 @@ type Provider struct {
 
 // Embedding is vector embedding.
 type Embedding struct {
+	// UID is the unique ID for this embedding.
+	UID string `json:"uid,omitempty"`
 	// Values stores embedding vector values.
 	// NOTE: the key is set to value - singular
 	// because the API is consumed by ECharts and
