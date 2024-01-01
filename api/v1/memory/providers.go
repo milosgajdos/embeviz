@@ -277,7 +277,10 @@ func applyOffsetLimit(items interface{}, offset int, limit int) interface{} {
 	val := reflect.ValueOf(items)
 	o := applyOffset(val, offset)
 	if reflect.ValueOf(o).Len() == 0 {
-		return reflect.Zero(reflect.TypeOf(val.Interface())).Interface()
+		// NOTE: we could return Zero value here,
+		// but we prefer to return empty slice.
+		// reflect.Zero(reflect.TypeOf(val.Interface())).Interface()
+		return val.Interface()
 	}
 	return applyLimit(reflect.ValueOf(o), limit)
 }
@@ -291,7 +294,10 @@ func applyOffset(items reflect.Value, offset int) interface{} {
 		case items.Len() >= offset:
 			return items.Slice(offset, items.Len()).Interface()
 		default:
-			return reflect.Zero(reflect.TypeOf(items.Interface())).Interface()
+			// NOTE: we could return Zero value here,
+			// but we prefer to return empty slice.
+			//return reflect.Zero(reflect.TypeOf(items.Interface())).Interface()
+			return items.Interface()
 		}
 	}
 	return items.Interface()
