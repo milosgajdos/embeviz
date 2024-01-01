@@ -16,6 +16,12 @@ The SPA is accessible on `/ui` URL path when you run the app.
 
 ![Embeviz Home](./ui/public/home.png?raw=true "Embeviz home page") ![Embeviz Provider](./ui/public/provider.png?raw=true "Embeviz provider page")
 
+<p align="center">
+  <img alt="Embeviz Home" src="./ui/public/home.png" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Embeviz Provider" src="./ui/public/provider.png" width="45%">
+</p>
+
 The API provides the swagger API endpoint that serves the API documentation powering the SPA.
 
 The app leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like [OpenAI](https://openai.com/), etc.
