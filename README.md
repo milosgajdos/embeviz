@@ -14,15 +14,19 @@ The app consists of two components:
 
 The SPA is accessible on `/ui` URL path when you run the app.
 
-![Embeviz Home](./ui/public/home.png?raw=true "Embeviz home page") ![Embeviz Provider](./ui/public/provider.png?raw=true "Embeviz provider page")
-
 <p align="center">
   <img alt="Embeviz Home" src="./ui/public/home.png" width="45%">
 &nbsp; &nbsp; &nbsp; &nbsp;
   <img alt="Embeviz Provider" src="./ui/public/provider.png" width="45%">
 </p>
 
-The API provides the swagger API endpoint that serves the API documentation powering the SPA.
+The API provides the swagger API endpoint on `/api/v1/docs` that serves the API documentation powering the SPA.
+
+<p align="center">
+  <img alt="Swagger endpoints" src="./ui/public/swagger_endpoints.png" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Swagger models" src="./ui/public/swagger_models.png" width="45%">
+</p>
 
 The app leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like [OpenAI](https://openai.com/), etc.
 
@@ -54,7 +58,7 @@ It relies on the [go-embeddings](https://github.com/milosgajdos/go-embeddings) G
 
 Once you've built the Go binary and bundled the webapp you can simply run the following command:
 ```shell
-go run ./...
+OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
 ```
 
 You should now be able to access the app on [http://localhost:5050/ui](http://localhost:5050/ui).
