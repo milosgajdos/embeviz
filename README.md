@@ -14,8 +14,7 @@ The app consists of two components:
 
 The SPA is accessible on `/ui` URL path when you run the app.
 
-![Embeviz Home](./ui/public/home.png?raw=true "Embeviz home page")
-![Embeviz Provider](./ui/public/provider.png?raw=true "Embeviz provider page")
+![Embeviz Home](./ui/public/home.png?raw=true "Embeviz home page") ![Embeviz Provider](./ui/public/provider.png?raw=true "Embeviz provider page")
 
 The API provides the swagger API endpoint that serves the API documentation powering the SPA.
 
