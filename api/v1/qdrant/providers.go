@@ -303,6 +303,38 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		},
 	}
 
+	// create a new embedding point
+	data := make([]float32, 0, len(embed.Values))
+	for _, val := range embed.Values {
+		data = append(data, float32(val))
+	}
+	upsertPoints := []*pb.PointStruct{
+		{
+			Id: &pb.PointId{
+				PointIdOptions: &pb.PointId_Uuid{
+					Uuid: uuid.NewString(),
+				},
+			},
+			Vectors: &pb.Vectors{
+				VectorsOptions: &pb.Vectors_Vector{
+					Vector: &pb.Vector{
+						Data: data,
+					},
+				},
+			},
+			Payload: map[string]*pb.Value{},
+		},
+	}
+	waitUpsert := true
+	if _, err := p.db.pts.Upsert(ctx, &pb.UpsertPoints{
+		CollectionName: uid,
+		Wait:           &waitUpsert,
+		Points:         upsertPoints,
+	}); err != nil {
+		return nil, err
+	}
+
+	// Collect all embeddings and calculate projections.
 	embs := []v1.Embedding{}
 	for {
 		resp, err := p.db.pts.Scroll(ctx, req)
@@ -336,7 +368,6 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	}
 
 	points := make([]*pb.PointStruct, 0, len(projs))
-	waitUpsert := true
 
 	for dim, dimProjs := range projs {
 		for i := range dimProjs {
@@ -346,19 +377,26 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 			}
 			points = append(points, &pb.PointStruct{
 				Id: &pb.PointId{
-					PointIdOptions: &pb.PointId_Uuid{Uuid: embs[i].UID},
+					PointIdOptions: &pb.PointId_Uuid{
+						Uuid: embs[i].UID,
+					},
 				},
-				Vectors: &pb.Vectors{VectorsOptions: &pb.Vectors_Vectors{
-					Vectors: &pb.NamedVectors{
-						Vectors: map[string]*pb.Vector{
-							string(dim): {Data: data},
+				Vectors: &pb.Vectors{
+					VectorsOptions: &pb.Vectors_Vectors{
+						Vectors: &pb.NamedVectors{
+							Vectors: map[string]*pb.Vector{
+								string(dim): {Data: data},
+							},
 						},
 					},
-				}},
+				},
 			})
 		}
 	}
 
+	// NOTE: this might need to be replaced with
+	// UpdateVectors, but we would als need to collect
+	// projections into pb.PointVectors
 	if _, err := p.db.pts.Upsert(ctx, &pb.UpsertPoints{
 		CollectionName: uid,
 		Wait:           &waitUpsert,
