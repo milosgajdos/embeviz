@@ -1,26 +1,38 @@
 # embeviz
 
+**THIS PROJECT IS WILDLY EXPERIMENTAL! USE AT YOUR OWN RISK OF SANITY! IF YOU LIKE CLEAN DRY CODE THIS ISN'T GONNA BE YOUR JAM!**
+
 [![Build Status](https://github.com/milosgajdos/embeviz/workflows/CI/badge.svg)](https://github.com/milosgajdos/embeviz/actions?query=workflow%3ACI)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/milosgajdos/embeviz)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A simple app that helps you visualize vector embeddings.
-
-**THIS PROJECT IS WILDLY EXPERIMENTAL! USE AT YOUR OWN RISK OF SANITY! IF YOU LIKE CLEAN DRY CODE THIS ISN'T GONNA BE YOUR JAM!**
+A simple app that helps you visualize data embeddings.
 
 The app consists of two components:
 * an API (written in Go, using [gofiber framework](https://docs.gofiber.io/))
-* an SPA (written in JavaScript using [Reactjs](https://react.dev/) and [React Router](https://reactrouter.com/en/main))
+* an SPA (written in JavaScript using [Reactjs](https://react.dev/) with [React Router](https://reactrouter.com/en/main))
 
-The SPA is served as a static asset on `/ui` URL path when you start the app.
+The SPA is accessible on `/ui` URL path when you run the app.
 
-The API offers swagger API endpoint that seves the API documentation powering the SPA.
+<p align="center">
+  <img alt="Embeviz Home" src="./ui/public/home.png" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Embeviz Provider" src="./ui/public/provider.png" width="45%">
+</p>
 
-This project leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like OpenAI, etc.
+The API provides the swagger API endpoint on `/api/v1/docs` that serves the API documentation powering the SPA.
 
-As a result of this you must supply specific environment variables that are used to initialized the API clients for fetching the embeddings. See the README of the `go-embeddings` module for more details.
+<p align="center">
+  <img alt="Swagger endpoints" src="./ui/public/swagger_endpoints.png" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Swagger models" src="./ui/public/swagger_models.png" width="45%">
+</p>
 
-**NOTE:** By default the API stores the embeddings in an in-memory "DB" (it's a major Go maps hack)
+The app leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like [OpenAI](https://openai.com/), etc.
+
+As a result of this you must supply specific environment variables when you run the app. The environment variables are used to initialize the API clients for fetching the embeddings. See the `README` of the `go-embeddings` module for more details.
+
+**NOTE:** By default the API stores the embeddings in an in-memory "DB" (it's a major Go maps hack!!)
 
 # Build
 
@@ -46,7 +58,7 @@ It relies on the [go-embeddings](https://github.com/milosgajdos/go-embeddings) G
 
 Once you've built the Go binary and bundled the webapp you can simply run the following command:
 ```shell
-go run ./...
+OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
 ```
 
 You should now be able to access the app on [http://localhost:5050/ui](http://localhost:5050/ui).
