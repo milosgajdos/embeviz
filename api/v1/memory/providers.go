@@ -277,7 +277,10 @@ func applyOffsetLimit(items interface{}, offset int, limit int) interface{} {
 	val := reflect.ValueOf(items)
 	o := applyOffset(val, offset)
 	if reflect.ValueOf(o).Len() == 0 {
-		return reflect.Zero(reflect.TypeOf(val.Interface())).Interface()
+		// NOTE: we could return Zero value here,
+		// reflect.Zero(reflect.TypeOf(val.Interface())).Interface()
+		// but we prefer to return an empty slice.
+		return reflect.MakeSlice(val.Type(), 0, 0).Interface()
 	}
 	return applyLimit(reflect.ValueOf(o), limit)
 }
@@ -291,14 +294,18 @@ func applyOffset(items reflect.Value, offset int) interface{} {
 		case items.Len() >= offset:
 			return items.Slice(offset, items.Len()).Interface()
 		default:
-			return reflect.Zero(reflect.TypeOf(items.Interface())).Interface()
+			// NOTE: we could return Zero value of items here,
+			// return reflect.Zero(reflect.TypeOf(items.Interface())).Interface()
+			// but we prefer to return an empty slice.
+			return reflect.MakeSlice(reflect.TypeOf(items.Interface()), 0, 0).Interface()
 		}
 	}
 	return items.Interface()
 }
 
 // applyLimit returns limit number of items.
-// If limit is either negative or bigger than the number of itmes it returns all items.
+// If limit is either negative or bigger than
+// the number of items it returns all items.
 func applyLimit(items reflect.Value, limit int) interface{} {
 	if limit > 0 {
 		switch {

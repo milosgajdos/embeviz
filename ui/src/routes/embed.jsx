@@ -17,7 +17,7 @@ export async function loader({ params }) {
     });
   }
   console.log(provider);
-  const { embeddings } = await getProviderProjections(params.uid);
+  const { embeddings } = (await getProviderProjections(params.uid)) ?? [];
   console.log(embeddings);
   return { provider, embeddings };
 }

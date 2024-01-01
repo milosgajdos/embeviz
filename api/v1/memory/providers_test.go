@@ -76,11 +76,11 @@ func TestGetProviders(t *testing.T) {
 		expErr     bool
 	}{
 		{"All", v1.ProviderFilter{}, pCount, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 100}, 0, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: -1}, pCount, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1}, pCount - 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1, Limit: 1}, 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1, Limit: 10}, pCount - 1, pCount, false},
+		{"LimitOffset_Count5_Offset100", v1.ProviderFilter{Offset: 100}, 0, pCount, false},
+		{"LimitOffset_Count5_Offset-1", v1.ProviderFilter{Offset: -1}, pCount, pCount, false},
+		{"LimitOffset_Count5_Offset1", v1.ProviderFilter{Offset: 1}, pCount - 1, pCount, false},
+		{"LimitOffset_Count5_Offset1_Limit1", v1.ProviderFilter{Offset: 1, Limit: 1}, 1, pCount, false},
+		{"LimitOffset_Count5_Offset1_Limit10", v1.ProviderFilter{Offset: 1, Limit: 10}, pCount - 1, pCount, false},
 	}
 
 	for _, tc := range testCases {
@@ -189,11 +189,11 @@ func TestGetProviderEmbeddings(t *testing.T) {
 		expErr     bool
 	}{
 		{"All", v1.ProviderFilter{}, pCount, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 100}, 0, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: -1}, pCount, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1}, pCount - 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1, Limit: 1}, 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1, Limit: 10}, pCount - 1, pCount, false},
+		{"LimitOffset_Count5_Offset100", v1.ProviderFilter{Offset: 100}, 0, pCount, false},
+		{"LimitOffset_Count5_Offset-1", v1.ProviderFilter{Offset: -1}, pCount, pCount, false},
+		{"LimitOffset_Count5_Offset1", v1.ProviderFilter{Offset: 1}, pCount - 1, pCount, false},
+		{"LimitOffset_Count5_Offset1_limit1", v1.ProviderFilter{Offset: 1, Limit: 1}, 1, pCount, false},
+		{"LimitOffset_Count5_Offset1_limit10", v1.ProviderFilter{Offset: 1, Limit: 10}, pCount - 1, pCount, false},
 	}
 
 	for _, tc := range testCases {
@@ -272,13 +272,13 @@ func TestGetProviderProjections(t *testing.T) {
 		expErr     bool
 	}{
 		{"All", v1.ProviderFilter{}, pCount, pCount, false},
-		{"AllWithDim", v1.ProviderFilter{Dim: &dim2D}, pCount, pCount, false},
-		{"LimitWithDim", v1.ProviderFilter{Limit: 1, Dim: &dim2D}, 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 100}, 0, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: -1}, pCount, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1}, pCount - 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1, Limit: 1}, 1, pCount, false},
-		{"LimitOffset", v1.ProviderFilter{Offset: 1, Limit: 10}, pCount - 1, pCount, false},
+		{"AllWithDim_Dim2D", v1.ProviderFilter{Dim: &dim2D}, pCount, pCount, false},
+		{"LimitWithDim_Limit1_Dim2D", v1.ProviderFilter{Limit: 1, Dim: &dim2D}, 1, pCount, false},
+		{"LimitOffset_Count5_Offset100", v1.ProviderFilter{Offset: 100}, 0, pCount, false},
+		{"LimitOffset_Count5_Offset-1_", v1.ProviderFilter{Offset: -1}, pCount, pCount, false},
+		{"LimitOffset_Count5_Offset1", v1.ProviderFilter{Offset: 1}, pCount - 1, pCount, false},
+		{"LimitOffset_Count5_Offset1_Limit1", v1.ProviderFilter{Offset: 1, Limit: 1}, 1, pCount, false},
+		{"LimitOffset_Count5_Offset1_Limit10", v1.ProviderFilter{Offset: 1, Limit: 10}, pCount - 1, pCount, false},
 	}
 
 	for _, tc := range testCases {
