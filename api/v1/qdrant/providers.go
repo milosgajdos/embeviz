@@ -3,7 +3,6 @@ package qdrant
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
@@ -58,12 +57,28 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	_, err := p.db.col.Create(ctx, &pb.CreateCollection{
 		CollectionName: uid,
-		VectorsConfig: &pb.VectorsConfig{Config: &pb.VectorsConfig_Params{
-			Params: &pb.VectorParams{
-				Size:     vectorSize,
-				Distance: distance,
+		VectorsConfig: &pb.VectorsConfig{
+			Config: &pb.VectorsConfig_ParamsMap{
+				ParamsMap: &pb.VectorParamsMap{
+					Map: map[string]*pb.VectorParams{
+						// NOTE(milosgajdos): empty name vector
+						// is the "default" point vector.
+						"": {
+							Size:     vectorSize,
+							Distance: distance,
+						},
+						"2D": {
+							Size:     2,
+							Distance: distance,
+						},
+						"3D": {
+							Size:     3,
+							Distance: distance,
+						},
+					},
+				},
 			},
-		}},
+		},
 		OptimizersConfig: &pb.OptimizersConfigDiff{
 			DefaultSegmentNumber: &defaultSegmentNumber,
 		},
@@ -107,7 +122,6 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 	providers := map[string]string{}
 
 	for _, a := range resp.Aliases {
-		fmt.Println("Collection", a.CollectionName)
 		if _, ok := providers[a.CollectionName]; ok {
 			continue
 		}
@@ -188,10 +202,12 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 	embs := make([]v1.Embedding, len(points))
 
 	for _, p := range points {
-		vec := p.GetVectors().GetVector()
+		// NOTE: this is a bit counter-intuitive; point is a default
+		// vector which is essentially an unnamed vector in the vector map
+		vec := p.GetVectors().GetVectors()
 		// TODO: grab metadata from p.Payload
-		vals := make([]float64, 0, len(vec.Data))
-		for _, val := range vec.Data {
+		vals := make([]float64, 0, len(vec.Vectors[""].Data))
+		for _, val := range vec.Vectors[""].Data {
 			vals = append(vals, float64(val))
 		}
 		embs = append(embs, v1.Embedding{
@@ -322,6 +338,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 					},
 				},
 			},
+			// TODO: metadata
 			Payload: map[string]*pb.Value{},
 		},
 	}
@@ -335,6 +352,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	}
 
 	// Collect all embeddings and calculate projections.
+	// NOTE: tread carefully, as this can shit memory pants on large collections!
 	embs := []v1.Embedding{}
 	for {
 		resp, err := p.db.pts.Scroll(ctx, req)
@@ -367,7 +385,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		return nil, err
 	}
 
-	points := make([]*pb.PointStruct, 0, len(projs))
+	vectors := make([]*pb.PointVectors, 0, len(projs))
 
 	for dim, dimProjs := range projs {
 		for i := range dimProjs {
@@ -375,7 +393,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 			for _, val := range dimProjs[i].Values {
 				data = append(data, float32(val))
 			}
-			points = append(points, &pb.PointStruct{
+			vectors = append(vectors, &pb.PointVectors{
 				Id: &pb.PointId{
 					PointIdOptions: &pb.PointId_Uuid{
 						Uuid: embs[i].UID,
@@ -394,13 +412,11 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		}
 	}
 
-	// NOTE: this might need to be replaced with
-	// UpdateVectors, but we would als need to collect
-	// projections into pb.PointVectors
-	if _, err := p.db.pts.Upsert(ctx, &pb.UpsertPoints{
+	// update vectors on the new embedding point
+	if _, err := p.db.pts.UpdateVectors(ctx, &pb.UpdatePointVectors{
 		CollectionName: uid,
 		Wait:           &waitUpsert,
-		Points:         points,
+		Points:         vectors,
 	}); err != nil {
 		return nil, err
 	}
