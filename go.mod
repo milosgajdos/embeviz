@@ -8,10 +8,12 @@ require (
 	github.com/gofiber/swagger v0.1.14
 	github.com/google/uuid v1.5.0
 	github.com/milosgajdos/go-embeddings v0.1.0
+	github.com/qdrant/go-client v1.7.0
 	github.com/swaggo/swag v1.16.2
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
 	golang.org/x/oauth2 v0.15.0
 	gonum.org/v1/gonum v0.14.0
+	google.golang.org/grpc v1.55.0
 )
 
 require (
@@ -37,8 +39,10 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

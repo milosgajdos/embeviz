@@ -11,9 +11,9 @@ import (
 	"github.com/milosgajdos/go-embeddings/vertexai"
 )
 
-// FetchEmbeddings fetches embeddings using the provided embedder.
+// FetchEmbeddings fetches embedding using the provided embedder.
 // It returns the fetched embedding or fails with error.
-func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingUpdate) (*v1.Embedding, error) {
+func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingsUpdate) (*v1.Embedding, error) {
 	var (
 		vals []float64
 		embs []*embeddings.Embedding

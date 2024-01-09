@@ -2,7 +2,6 @@ package memory
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -47,7 +46,8 @@ func TestCreateGraph(t *testing.T) {
 			"foo": "bar",
 		}
 
-		if _, err := ps.AddProvider(context.TODO(), name, md); !errors.Is(err, ErrDBClosed) {
+		_, err := ps.AddProvider(context.TODO(), name, md)
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})
@@ -105,7 +105,8 @@ func TestGetProviders(t *testing.T) {
 	t.Run("ClosedDB", func(t *testing.T) {
 		ps := MustClosedProvidersService(t, DSN)
 
-		if _, _, err := ps.GetProviders(context.TODO(), v1.ProviderFilter{}); !errors.Is(err, ErrDBClosed) {
+		_, _, err := ps.GetProviders(context.TODO(), v1.ProviderFilter{})
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})
@@ -150,7 +151,8 @@ func TestGetProviderByUID(t *testing.T) {
 	t.Run("ClosedDB", func(t *testing.T) {
 		ps := MustClosedProvidersService(t, DSN)
 
-		if _, err := ps.GetProviderByUID(context.TODO(), "garbageUID"); !errors.Is(err, ErrDBClosed) {
+		_, err := ps.GetProviderByUID(context.TODO(), "garbageUID")
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})
@@ -218,7 +220,8 @@ func TestGetProviderEmbeddings(t *testing.T) {
 	t.Run("ClosedDB", func(t *testing.T) {
 		ps := MustClosedProvidersService(t, DSN)
 
-		if _, _, err := ps.GetProviders(context.TODO(), v1.ProviderFilter{}); !errors.Is(err, ErrDBClosed) {
+		_, _, err := ps.GetProviders(context.TODO(), v1.ProviderFilter{})
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})
@@ -307,7 +310,8 @@ func TestGetProviderProjections(t *testing.T) {
 	t.Run("ClosedDB", func(t *testing.T) {
 		ps := MustClosedProvidersService(t, DSN)
 
-		if _, _, err := ps.GetProviders(context.TODO(), v1.ProviderFilter{}); !errors.Is(err, ErrDBClosed) {
+		_, _, err := ps.GetProviders(context.TODO(), v1.ProviderFilter{})
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})
@@ -348,9 +352,8 @@ func TestUpdateProviderEmbeddings(t *testing.T) {
 	t.Run("NotFound", func(t *testing.T) {
 		ps := MustProvidersService(t, DSN)
 
-		emb := v1.Embedding{}
-
-		if _, err := ps.UpdateProviderEmbeddings(context.TODO(), "garbageUID", emb, v1.PCA); v1.ErrorCode(err) != v1.ENOTFOUND {
+		_, err := ps.UpdateProviderEmbeddings(context.TODO(), "fooUID", v1.Embedding{}, v1.PCA)
+		if v1.ErrorCode(err) != v1.ENOTFOUND {
 			t.Fatalf("expected error: %s, got: %s", v1.ENOTFOUND, v1.ErrorCode(err))
 		}
 	})
@@ -358,7 +361,8 @@ func TestUpdateProviderEmbeddings(t *testing.T) {
 	t.Run("ClosedDB", func(t *testing.T) {
 		ps := MustClosedProvidersService(t, DSN)
 
-		if _, err := ps.GetProviderByUID(context.TODO(), "garbageUID"); !errors.Is(err, ErrDBClosed) {
+		_, err := ps.GetProviderByUID(context.TODO(), "garbageUID")
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})
@@ -420,7 +424,8 @@ func TestDropProviderEmbeddings(t *testing.T) {
 	t.Run("NotFound", func(t *testing.T) {
 		ps := MustProvidersService(t, DSN)
 
-		if err := ps.DropProviderEmbeddings(context.TODO(), "blahUID"); v1.ErrorCode(err) != v1.ENOTFOUND {
+		err := ps.DropProviderEmbeddings(context.TODO(), "blahUID")
+		if v1.ErrorCode(err) != v1.ENOTFOUND {
 			t.Fatalf("expected error: %s, got: %s", v1.ENOTFOUND, v1.ErrorCode(err))
 		}
 	})
@@ -428,7 +433,8 @@ func TestDropProviderEmbeddings(t *testing.T) {
 	t.Run("ClosedDB", func(t *testing.T) {
 		ps := MustClosedProvidersService(t, DSN)
 
-		if _, err := ps.GetProviderByUID(context.TODO(), "garbageUID"); !errors.Is(err, ErrDBClosed) {
+		_, err := ps.GetProviderByUID(context.TODO(), "garbageUID")
+		if v1.ErrorCode(err) != v1.EINVALID && v1.ErrorMessage(err) != ErrDBClosed.Error() {
 			t.Fatalf("expected error: %v, got: %v", ErrDBClosed, err)
 		}
 	})

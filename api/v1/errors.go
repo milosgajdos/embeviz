@@ -55,7 +55,7 @@ func ErrorMessage(err error) string {
 	} else if errors.As(err, &e) {
 		return e.Message
 	}
-	return "internal error."
+	return "internal error"
 }
 
 // Errorf is a helper function to return an Error with a given code and formatted message.
