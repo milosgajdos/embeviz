@@ -18,6 +18,7 @@ const (
 	proj = "proj"
 )
 
+// ProvidersService is an in-memory store for embeddings providers.
 type ProvidersService struct {
 	db *DB
 }
@@ -35,7 +36,7 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 	p.db.Lock()
 	defer p.db.Unlock()
 	if p.db.Closed {
-		return nil, ErrDBClosed
+		return nil, v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	uid := uuid.New().String()
@@ -62,7 +63,7 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 	defer p.db.RUnlock()
 	count := 0
 	if p.db.Closed {
-		return nil, v1.Page{Count: &count}, ErrDBClosed
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	px := make([]*v1.Provider, 0, len(p.db.store[meta]))
@@ -83,7 +84,7 @@ func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v
 	p.db.RLock()
 	defer p.db.RUnlock()
 	if p.db.Closed {
-		return nil, ErrDBClosed
+		return nil, v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	if p, ok := p.db.store[uid]; ok {
@@ -100,7 +101,7 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 	defer p.db.RUnlock()
 	count := 0
 	if p.db.Closed {
-		return nil, v1.Page{Count: &count}, ErrDBClosed
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	provider, ok := p.db.store[uid]
@@ -118,14 +119,14 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 	return paging.ApplyOffsetLimit(newEmbs, offset, filter.Limit).([]v1.Embedding), v1.Page{Count: &count}, nil
 }
 
-// GetProviderProjections fetches a specific provider projection.
+// GetProviderProjections fetches a specific provider embeddings projection.
 // nolint:revive
 func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid string, filter v1.ProviderFilter) (map[v1.Dim][]v1.Embedding, v1.Page, error) {
 	p.db.RLock()
 	defer p.db.RUnlock()
 	count := 0
 	if p.db.Closed {
-		return nil, v1.Page{Count: &count}, ErrDBClosed
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	provider, ok := p.db.store[uid]
@@ -192,14 +193,14 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 }
 
 // DropProviderEmbeddings drops all embeddings for the provider with the given uid.
-// NOTE: this obviously also drops the projections, too as keeping that would make no sense
-// since there would be no embeddings to associate them with
+// NOTE: this obviously also drops the projections, as keeping them would make no sense
+// since there would be no embeddings to associate them with.
 // nolint:revive
 func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
 	p.db.Lock()
 	defer p.db.Unlock()
 	if p.db.Closed {
-		return ErrDBClosed
+		return v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	provider, ok := p.db.store[uid]
@@ -217,7 +218,7 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 	p.db.Lock()
 	defer p.db.Unlock()
 	if p.db.Closed {
-		return ErrDBClosed
+		return v1.Errorf(v1.EINTERNAL, "%v", ErrDBClosed)
 	}
 
 	provider, ok := p.db.store[uid]

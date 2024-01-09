@@ -44,7 +44,8 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 	var filter v1.ProviderFilter
 	filter.Limit = v1.DefaultLimit
 
-	// NOTE(milosgajdos): we don't care if the conversion fails
+	// NOTE(milosgajdos): we don't care if the conversion fails here.
+	// If it does we'll get 0 and use the default values.
 	offset := c.QueryInt("offset")
 	limit := c.QueryInt("limit")
 
@@ -128,7 +129,8 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 	var filter v1.ProviderFilter
 	filter.Limit = v1.DefaultLimit
 
-	// NOTE(milosgajdos): we don't care if the conversion fails
+	// NOTE(milosgajdos): we don't care if the conversion fails here.
+	// If it does we'll get 0 and use the default values.
 	offset := c.QueryInt("offset")
 	limit := c.QueryInt("limit")
 
@@ -140,7 +142,7 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 		filter.Limit = limit
 	}
 
-	embeddings, page, err := s.ProvidersService.GetProviderEmbeddings(context.TODO(), uid.String(), filter)
+	embeddings, page, err := s.ProvidersService.GetProviderEmbeddings(context.Background(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -183,7 +185,8 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 	var filter v1.ProviderFilter
 	filter.Limit = v1.DefaultLimit
 
-	// NOTE(milosgajdos): we don't care if the conversion fails
+	// NOTE(milosgajdos): we don't care if the conversion fails here.
+	// If it does we'll get 0 and use the default values.
 	offset := c.QueryInt("offset")
 	limit := c.QueryInt("limit")
 	if offset > 0 {
@@ -192,6 +195,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 	if limit > 0 {
 		filter.Limit = limit
 	}
+
 	dim := c.Query("dim")
 	if dim != "" {
 		switch strings.ToUpper(dim) {
@@ -204,7 +208,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 		}
 	}
 
-	projections, page, err := s.ProvidersService.GetProviderProjections(context.TODO(), uid.String(), filter)
+	projections, page, err := s.ProvidersService.GetProviderProjections(context.Background(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -251,11 +255,16 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: validate payload
-	req := new(v1.EmbeddingUpdate)
+	req := new(v1.EmbeddingsUpdate)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
 			Error: err.Error(),
+		})
+	}
+
+	if req.Text == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: fmt.Sprintf("empty text provided to %s provider", uid.String()),
 		})
 	}
 
@@ -265,8 +274,8 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: fetch this in a goroutine
-	resp, err := FetchEmbeddings(context.TODO(), embedder, req)
+	ctx := context.Background()
+	resp, err := FetchEmbeddings(ctx, embedder, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
 			Error: err.Error(),
@@ -282,9 +291,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 	}
 	resp.Metadata = req.Metadata
 
-	proj := req.Projection
-
-	emb, err := s.ProvidersService.UpdateProviderEmbeddings(context.TODO(), uid.String(), *resp, proj)
+	emb, err := s.ProvidersService.UpdateProviderEmbeddings(ctx, uid.String(), *resp, req.Projection)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.EINVALID {
 			return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
@@ -317,7 +324,7 @@ func (s *Server) DropProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := s.ProvidersService.DropProviderEmbeddings(context.TODO(), uid.String()); err != nil {
+	if err := s.ProvidersService.DropProviderEmbeddings(context.Background(), uid.String()); err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.SendStatus(fiber.StatusNoContent)
 		}
@@ -351,8 +358,7 @@ func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: validate payload
-	req := new(v1.EmbeddingProjectionUpdate)
+	req := new(v1.ProjectionsUpdate)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
 			Error: err.Error(),
@@ -369,9 +375,8 @@ func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
 		req.Metadata = make(map[string]any)
 	}
 	req.Metadata["projection"] = req.Projection
-	proj := req.Projection
 
-	if err := s.ProvidersService.ComputeProviderProjections(context.TODO(), uid.String(), proj); err != nil {
+	if err := s.ProvidersService.ComputeProviderProjections(context.Background(), uid.String(), req.Projection); err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.SendStatus(fiber.StatusNoContent)
 		}

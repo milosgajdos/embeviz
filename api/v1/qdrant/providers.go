@@ -17,7 +17,13 @@ var (
 	defaultDistance             = pb.Distance_Dot
 )
 
-// ProvidersService allows to store data in qdrant vector store
+var (
+	ErrMissingVectorSize     = errors.New("ErrMissingVectorSize")
+	ErrInvalidVectorSize     = errors.New("ErrInvalidVectorSize")
+	ErrInvalidVectorDistance = errors.New("ErrInvalidVectorDistance")
+)
+
+// ProvidersService allows to store data in qdrant vector store.
 type ProvidersService struct {
 	db *DB
 }
@@ -30,16 +36,16 @@ func NewProvidersService(db *DB) (*ProvidersService, error) {
 }
 
 // AddProvider creates a new provider and returns it.
-// It creates a new collection and raturns the new provider.
+// It creates a new qdrant collection and raturns the new provider.
 // The collection name is the same as the UUID of the provider.
 func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[string]any) (*v1.Provider, error) {
 	size, ok := md["size"]
 	if !ok {
-		return nil, errors.New("missing vector size")
+		return nil, v1.Errorf(v1.EINVALID, "%v: %v", ErrMissingVectorSize, size)
 	}
 	vectorSize, ok := size.(uint64)
 	if !ok {
-		return nil, errors.New("invalid vector size")
+		return nil, v1.Errorf(v1.EINVALID, "%v: %v", ErrInvalidVectorSize, vectorSize)
 	}
 
 	var distance pb.Distance
@@ -49,7 +55,7 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 	} else {
 		distance, ok = dist.(pb.Distance)
 		if !ok {
-			return nil, errors.New("invalid vector distance")
+			return nil, v1.Errorf(v1.EINVALID, "%v: %v", ErrInvalidVectorDistance, dist)
 		}
 	}
 
@@ -80,11 +86,12 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 			},
 		},
 		OptimizersConfig: &pb.OptimizersConfigDiff{
+			// https://qdrant.tech/documentation/concepts/optimizer/#merge-optimizer
 			DefaultSegmentNumber: &defaultSegmentNumber,
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, v1.Errorf(v1.EINTERNAL, "CreateCollection error %v", err)
 	}
 
 	createAliases := []*pb.AliasOperations{
@@ -99,7 +106,7 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 	}
 
 	if _, err := p.db.col.UpdateAliases(ctx, &pb.ChangeAliases{Actions: createAliases}); err != nil {
-		return nil, err
+		return nil, v1.Errorf(v1.EINTERNAL, "UpdateAliases error %v", err)
 	}
 
 	return &v1.Provider{
@@ -110,13 +117,15 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 }
 
 // GetProviders returns a list of providers filtered by filter.
+// NOTE: this does not populate metadata in v1.Provider because qdrant does not allow
+// storing any metadata about the collections; only about the data stored in collections.
 func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderFilter) ([]*v1.Provider, v1.Page, error) {
 	count := 0
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 
 	resp, err := p.db.col.ListAliases(ctx, &pb.ListAliasesRequest{})
 	if err != nil {
-		return nil, v1.Page{Count: &count}, err
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "ListAliases error %v", err)
 	}
 
 	providers := map[string]string{}
@@ -146,13 +155,15 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 }
 
 // GetProviderByUID returns the provider with the given uid.
+// NOTE: this does not populate metadata in v1.Provider because qdrant does not allow
+// storing any metadata about the collections; only about the data stored in collections.
 func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v1.Provider, error) {
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 
 	// * fetch aliases for the given collection
 	resp, err := p.db.httpClient.AliasList(ctx, uid)
 	if err != nil {
-		return nil, err
+		return nil, v1.Errorf(v1.EINTERNAL, "AliasList error %v", err)
 	}
 
 	var alias string
@@ -192,9 +203,10 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 
 	count := 0
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+
 	resp, err := p.db.pts.Scroll(ctx, req)
 	if err != nil {
-		return nil, v1.Page{Count: &count}, err
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 	}
 	next := resp.NextPageOffset.String()
 
@@ -244,9 +256,10 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 
 	count := 0
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+
 	resp, err := p.db.pts.Scroll(ctx, req)
 	if err != nil {
-		return nil, v1.Page{Count: &count}, err
+		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 	}
 	next := resp.NextPageOffset.String()
 
@@ -348,7 +361,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		Wait:           &waitUpsert,
 		Points:         upsertPoints,
 	}); err != nil {
-		return nil, err
+		return nil, v1.Errorf(v1.EINTERNAL, "Upsert error %v", err)
 	}
 
 	// Collect all embeddings and calculate projections.
@@ -382,7 +395,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 
 	projs, err := projection.Compute(embs, proj)
 	if err != nil {
-		return nil, err
+		return nil, v1.Errorf(v1.EINTERNAL, "Compute error %v", err)
 	}
 
 	vectors := make([]*pb.PointVectors, 0, len(projs))
@@ -425,21 +438,20 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 }
 
 // DropProviderEmbeddings drops all provider embeddings from the store
-// nolint:revive
 func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid string) error {
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	// * retrieven collection
 	// * grab the vector config
 	col, err := p.db.col.Get(ctx, &pb.GetCollectionInfoRequest{CollectionName: uid})
 	if err != nil {
-		return err
+		return v1.Errorf(v1.EINTERNAL, "GetCollection error: %v", err)
 	}
 	vecConfig := col.Result.Config.Params.GetVectorsConfig()
 
 	// * fetch aliases
 	resp, err := p.db.httpClient.AliasList(ctx, uid)
 	if err != nil {
-		return err
+		return v1.Errorf(v1.EINTERNAL, "AliasList error: %v", err)
 	}
 
 	// actions for deleting aliases
@@ -463,14 +475,14 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 		})
 	}
 	if _, err := p.db.col.UpdateAliases(ctx, &pb.ChangeAliases{Actions: deleteAliases}); err != nil {
-		return err
+		return v1.Errorf(v1.EINTERNAL, "DeleteAliases error: %v", err)
 	}
 
 	// * drop collection
 	if _, err := p.db.col.Delete(ctx, &pb.DeleteCollection{
 		CollectionName: uid,
 	}); err != nil {
-		return err
+		return v1.Errorf(v1.EINTERNAL, "DeleteCollection: %v", err)
 	}
 
 	// * create new collection
@@ -481,11 +493,11 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 			DefaultSegmentNumber: &defaultSegmentNumber,
 		},
 	}); err != nil {
-		return err
+		return v1.Errorf(v1.EINTERNAL, "CreateCollection: %v", err)
 	}
 
 	if _, err := p.db.col.UpdateAliases(ctx, &pb.ChangeAliases{Actions: createAliases}); err != nil {
-		return err
+		return v1.Errorf(v1.EINTERNAL, "UpdateAliases error: %v", err)
 	}
 
 	return nil
