@@ -13,6 +13,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+const (
+	Scheme       = "qdrant"
+	SecureScheme = "qdrants"
+)
+
 var (
 	ErrMissingDSN = errors.New("ErrMissingDSN")
 	ErrInvalidDSN = errors.New("ErrInvalidDSN")
@@ -61,9 +66,9 @@ func (db *DB) Open() (err error) {
 	// TODO: build HTTP API Base URL here and pass it to the HTTP API client.
 	var dialOpts []grpc.DialOption
 	switch scheme {
-	case "qdrant://":
+	case Scheme:
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	case "qdrants://":
+	case SecureScheme:
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	default:
 		// NOTE: we default to insecure opts
@@ -96,7 +101,7 @@ func (db *DB) Open() (err error) {
 
 // Close closes the database connection.
 func (db *DB) Close() error {
-	// Close database.
+	// Close database connection.
 	if db.conn != nil {
 		return db.conn.Close()
 	}

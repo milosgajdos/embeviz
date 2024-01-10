@@ -38,10 +38,12 @@ func NewProvidersService(db *DB) (*ProvidersService, error) {
 // AddProvider creates a new provider and returns it.
 // It creates a new qdrant collection and raturns the new provider.
 // The collection name is the same as the UUID of the provider.
+// TODO: only create a new collection if it doesn't already exist!
+// * list aliases that match the name; if they exist, list collections for them; if they dont, create
 func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[string]any) (*v1.Provider, error) {
 	size, ok := md["size"]
 	if !ok {
-		return nil, v1.Errorf(v1.EINVALID, "%v: %v", ErrMissingVectorSize, size)
+		return nil, v1.Errorf(v1.EINVALID, "%v", ErrMissingVectorSize)
 	}
 	vectorSize, ok := size.(uint64)
 	if !ok {
@@ -485,7 +487,7 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 		return v1.Errorf(v1.EINTERNAL, "DeleteCollection: %v", err)
 	}
 
-	// * create new collection
+	// create a new collection
 	if _, err = p.db.col.Create(ctx, &pb.CreateCollection{
 		CollectionName: uid,
 		VectorsConfig:  vecConfig,
@@ -503,8 +505,12 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 	return nil
 }
 
-// ComputeProviderProjections drops existing projections and recomputes anew.
+// ComputeProviderProjections recomputes all projections from scratch for the provider with the given UID.
 // nolint:revive
 func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid string, proj v1.Projection) error {
+	// TODO
+	// * get all embeddings
+	// * compute projetions for each
+	// * update projections vectors
 	return v1.Errorf(v1.ENOTIMPLEMENTED, "ComputeProviderProjections")
 }

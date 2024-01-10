@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -14,6 +15,7 @@ import (
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 	"github.com/milosgajdos/embeviz/api/v1/http"
 	"github.com/milosgajdos/embeviz/api/v1/memory"
+	"github.com/milosgajdos/embeviz/api/v1/qdrant"
 	"github.com/milosgajdos/go-embeddings/cohere"
 	"github.com/milosgajdos/go-embeddings/openai"
 	"github.com/milosgajdos/go-embeddings/vertexai"
@@ -69,7 +71,7 @@ func run(args []string) error {
 	}
 
 	// adds default embedders
-	embedders, err := AddDefaultEmbedders(ps)
+	embedders, err := addDefaultEmbedders(ps)
 	if err != nil {
 		return err
 	}
@@ -110,15 +112,34 @@ func run(args []string) error {
 	return s.Close(timeoutCtx)
 }
 
-// NewProviderService returns an instance of v1.ProviderService based on the DSN
-// Currently we only support in-memory implementation
+// NewProviderService returns an instance of v1.ProviderService based on the DSN.
+// Currently we only support in-memory or qdrant.tech stores.
 func NewProviderService(dsn string) (v1.ProvidersService, error) {
-	switch dsn {
-	case memory.DSN:
+	if strings.EqualFold(dsn, memory.DSN) {
 		return makeMemoryProvidersService(dsn)
-	default:
-		return nil, fmt.Errorf("unsuported DSN: %s", dsn)
 	}
+	scheme, _, ok := strings.Cut(dsn, "://")
+	if !ok {
+		return nil, fmt.Errorf("unsupported scheme: %s", scheme)
+	}
+	switch scheme {
+	case qdrant.Scheme, qdrant.SecureScheme:
+		return makeQdrantProviderService(dsn)
+	}
+	return nil, fmt.Errorf("unsuported DSN: %s", dsn)
+}
+
+// makeQdrantProviderService creates a ProviderService
+// backed by qdrant.tech vector DB and returns it.
+func makeQdrantProviderService(dsn string) (v1.ProvidersService, error) {
+	db, err := qdrant.NewDB(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating new DB: %v", err)
+	}
+	if err := db.Open(); err != nil {
+		return nil, fmt.Errorf("failed opening DB: %v", err)
+	}
+	return qdrant.NewProvidersService(db)
 }
 
 // makeMemoryProvidersService creates an ProvidersService
@@ -134,16 +155,19 @@ func makeMemoryProvidersService(dsn string) (v1.ProvidersService, error) {
 	return memory.NewProvidersService(db)
 }
 
-// AddDefaultEmbedders adds the default embedders as long as alll the required
+// addDefaultEmbedders adds the default embedders as long as alll the required
 // environment variables are set for eache specific embedding provider:
 // * OPENAI_API_KEY for OpenAI API
 // * COHERE_API_KEY for Cohere API
 // * VERTEXAI_TOKEN, VERTEXAI_MODEL_ID, GOOGLE_PROJECT_ID for Google VertexAI
-func AddDefaultEmbedders(ps v1.ProvidersService) (map[string]any, error) {
+func addDefaultEmbedders(ps v1.ProvidersService) (map[string]any, error) {
 	embedders := make(map[string]any)
 
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
-		openAI, err := ps.AddProvider(context.Background(), "OpenAI", map[string]any{})
+		md := map[string]any{
+			"size": uint64(1536),
+		}
+		openAI, err := ps.AddProvider(context.Background(), "OpenAI", md)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +175,10 @@ func AddDefaultEmbedders(ps v1.ProvidersService) (map[string]any, error) {
 	}
 
 	if apiKey := os.Getenv("COHERE_API_KEY"); apiKey != "" {
-		cohereAI, err := ps.AddProvider(context.Background(), "Cohere", map[string]any{})
+		md := map[string]any{
+			"size": uint64(1024),
+		}
+		cohereAI, err := ps.AddProvider(context.Background(), "Cohere", md)
 		if err != nil {
 			return nil, err
 		}
@@ -160,11 +187,13 @@ func AddDefaultEmbedders(ps v1.ProvidersService) (map[string]any, error) {
 
 	if os.Getenv("VERTEXAI_TOKEN") != "" &&
 		os.Getenv("GOOGLE_PROJECT_ID") != "" {
-		vertexAI, err := ps.AddProvider(context.Background(), "VertexAI", map[string]any{})
+		md := map[string]any{
+			"size": uint64(768),
+		}
+		vertexAI, err := ps.AddProvider(context.Background(), "VertexAI", md)
 		if err != nil {
 			return nil, err
 		}
-
 		ts, err := google.DefaultTokenSource(context.Background(), vertexai.Scopes)
 		if err != nil {
 			return nil, fmt.Errorf("vertexai: token source: %v", err)
