@@ -25,7 +25,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Get all providers.",
+                "summary": "Get all embeddings providers.",
                 "parameters": [
                     {
                         "type": "integer",
@@ -65,7 +65,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Get provider by UID.",
+                "summary": "Get embeddings provider by UID.",
                 "parameters": [
                     {
                         "type": "string",
@@ -112,7 +112,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Get provider embedding by UID.",
+                "summary": "Get embeddings by provider UID.",
                 "parameters": [
                     {
                         "type": "string",
@@ -172,7 +172,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Fetch embeddings and update the store for the provider with the given UID.",
+                "summary": "Fetch and store embeddings for the provider with the given UID.",
                 "parameters": [
                     {
                         "type": "string",
@@ -182,12 +182,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Update a provider",
+                        "description": "Update provider embeddings",
                         "name": "provider",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.EmbeddingUpdate"
+                            "$ref": "#/definitions/v1.EmbeddingsUpdate"
                         }
                     }
                 ],
@@ -226,7 +226,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Delete provider embeddings by UID.",
+                "summary": "Delete embeddings by provider UID.",
                 "parameters": [
                     {
                         "type": "string",
@@ -267,7 +267,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Get provider embedding projections by UID.",
+                "summary": "Get embeddings projections by provider UID.",
                 "parameters": [
                     {
                         "type": "string",
@@ -327,7 +327,7 @@ const docTemplate = `{
                 "tags": [
                     "providers"
                 ],
-                "summary": "Recompute embeddings projections for a provider by UID and return them",
+                "summary": "Recompute embeddings projections for a provider by UID and return them.",
                 "parameters": [
                     {
                         "type": "string",
@@ -337,12 +337,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Update embedding projections",
+                        "description": "Update embeddings projections",
                         "name": "provider",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.EmbeddingProjectionUpdate"
+                            "$ref": "#/definitions/v1.ProjectionsUpdate"
                         }
                     }
                 ],
@@ -384,42 +384,16 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {}
                 },
+                "uid": {
+                    "description": "UID is the unique ID for this embedding.",
+                    "type": "string"
+                },
                 "value": {
                     "description": "Values stores embedding vector values.\nNOTE: the key is set to value - singular\nbecause the API is consumed by ECharts and\nit's just sad ECharts expects value slice.\nWe could handle that in JS but who can be bothered?",
                     "type": "array",
                     "items": {
                         "type": "number"
                     }
-                }
-            }
-        },
-        "v1.EmbeddingProjectionUpdate": {
-            "type": "object",
-            "properties": {
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "projection": {
-                    "$ref": "#/definitions/v1.Projection"
-                }
-            }
-        },
-        "v1.EmbeddingUpdate": {
-            "type": "object",
-            "properties": {
-                "label": {
-                    "type": "string"
-                },
-                "metadata": {
-                    "type": "object",
-                    "additionalProperties": {}
-                },
-                "projection": {
-                    "$ref": "#/definitions/v1.Projection"
-                },
-                "text": {
-                    "type": "string"
                 }
             }
         },
@@ -437,6 +411,24 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.EmbeddingsUpdate": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "projection": {
+                    "$ref": "#/definitions/v1.Projection"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -449,7 +441,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "count": {
-                    "description": "Count is number of all\nresults if provided.",
+                    "description": "Count is the number of all\nresults if provided.",
                     "type": "integer"
                 },
                 "next": {
@@ -483,6 +475,18 @@ const docTemplate = `{
                 },
                 "page": {
                     "$ref": "#/definitions/v1.Page"
+                }
+            }
+        },
+        "v1.ProjectionsUpdate": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "projection": {
+                    "$ref": "#/definitions/v1.Projection"
                 }
             }
         },

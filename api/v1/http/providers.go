@@ -30,8 +30,8 @@ func (s *Server) registerProviderRoutes(r fiber.Router) {
 	r.Mount("/", routes)
 }
 
-// GetAllProviders returns all available providers.
-// @Summary Get all providers.
+// GetAllProviders returns all available embeddings providers.
+// @Summary Get all embeddings providers.
 // @Description Get all available providers.
 // @Tags providers
 // @Produce json
@@ -70,8 +70,8 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 	})
 }
 
-// GetProviderByUID returns the provider with the given UID.
-// @Summary Get provider by UID.
+// GetProviderByUID returns the embeddings provider with the given UID.
+// @Summary Get embeddings provider by UID.
 // @Description Returns embeddings provider with the given UID.
 // @Tags providers
 // @Produce json
@@ -105,8 +105,8 @@ func (s *Server) GetProviderByUID(c *fiber.Ctx) error {
 	return c.JSON(provider)
 }
 
-// GetProviderEmbeddings returns all stored embeddings for the given provider.
-// @Summary Get provider embedding by UID.
+// GetProviderEmbeddings returns all embeddings for the provider with the given UID.
+// @Summary Get embeddings by provider UID.
 // @Description Returns embeddings for the provider with the given UID.
 // @Tags providers
 // @Produce json
@@ -162,7 +162,7 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 }
 
 // GetProviderProjections returns all stored embedding projections for the given provider.
-// @Summary Get provider embedding projections by UID.
+// @Summary Get embeddings projections by provider UID.
 // @Description Returns embedding projections for the provider with the given UID.
 // @Tags providers
 // @Produce json
@@ -228,13 +228,13 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 }
 
 // UpdateProviderEmbeddings fetches embeddings and updates provider records.
-// @Summary Fetch embeddings and update the store for the provider with the given UID.
+// @Summary Fetch and store embeddings for the provider with the given UID.
 // @Description Update provider embeddings.
 // @Tags providers
 // @Accept json
 // @Produce json
 // @Param id path string true "Provider UID"
-// @Param provider body v1.EmbeddingUpdate true "Update a provider"
+// @Param provider body v1.EmbeddingsUpdate true "Update provider embeddings"
 // @Success 200 {object} v1.Embedding
 // @Failure 400 {object} v1.ErrorResponse
 // @Failure 404 {object} v1.ErrorResponse
@@ -307,7 +307,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 }
 
 // DropProviderEmbeddings drops all embeddings of the provider with the given uid.
-// @Summary Delete provider embeddings by UID.
+// @Summary Delete embeddings by provider UID.
 // @Description Delete embeddings by provider UID. This also drops projections.
 // @Tags providers
 // @Produce json
@@ -337,13 +337,13 @@ func (s *Server) DropProviderEmbeddings(c *fiber.Ctx) error {
 }
 
 // ComputeProviderProjections recomputes provider projections from scratch by UID.
-// @Summary Recompute embeddings projections for a provider by UID and return them
+// @Summary Recompute embeddings projections for a provider by UID and return them.
 // @Description Recompute provider projections.
 // @Tags providers
 // @Accept json
 // @Produce json
 // @Param id path string true "Provider UID"
-// @Param provider body v1.EmbeddingProjectionUpdate true "Update embedding projections"
+// @Param provider body v1.ProjectionsUpdate true "Update embeddings projections"
 // @Success 200 {object} v1.ProjectionsResponse
 // @Success 200 {object} v1.Embedding
 // @Failure 400 {object} v1.ErrorResponse

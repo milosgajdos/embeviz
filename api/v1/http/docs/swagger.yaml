@@ -6,6 +6,9 @@ definitions:
         additionalProperties: {}
         description: Metadata for the given embedding vector.
         type: object
+      uid:
+        description: UID is the unique ID for this embedding.
+        type: string
       value:
         description: |-
           Values stores embedding vector values.
@@ -17,15 +20,16 @@ definitions:
           type: number
         type: array
     type: object
-  v1.EmbeddingProjectionUpdate:
+  v1.EmbeddingsResponse:
     properties:
-      metadata:
-        additionalProperties: {}
-        type: object
-      projection:
-        $ref: '#/definitions/v1.Projection'
+      embeddings:
+        items:
+          $ref: '#/definitions/v1.Embedding'
+        type: array
+      page:
+        $ref: '#/definitions/v1.Page'
     type: object
-  v1.EmbeddingUpdate:
+  v1.EmbeddingsUpdate:
     properties:
       label:
         type: string
@@ -37,15 +41,6 @@ definitions:
       text:
         type: string
     type: object
-  v1.EmbeddingsResponse:
-    properties:
-      embeddings:
-        items:
-          $ref: '#/definitions/v1.Embedding'
-        type: array
-      page:
-        $ref: '#/definitions/v1.Page'
-    type: object
   v1.ErrorResponse:
     properties:
       error:
@@ -55,7 +50,7 @@ definitions:
     properties:
       count:
         description: |-
-          Count is number of all
+          Count is the number of all
           results if provided.
         type: integer
       next:
@@ -83,6 +78,14 @@ definitions:
         type: object
       page:
         $ref: '#/definitions/v1.Page'
+    type: object
+  v1.ProjectionsUpdate:
+    properties:
+      metadata:
+        additionalProperties: {}
+        type: object
+      projection:
+        $ref: '#/definitions/v1.Projection'
     type: object
   v1.Provider:
     properties:
@@ -136,7 +139,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Get all providers.
+      summary: Get all embeddings providers.
       tags:
       - providers
   /v1/providers/{uid}:
@@ -167,7 +170,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Get provider by UID.
+      summary: Get embeddings provider by UID.
       tags:
       - providers
   /v1/providers/{uid}/embeddings:
@@ -194,7 +197,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Delete provider embeddings by UID.
+      summary: Delete embeddings by provider UID.
       tags:
       - providers
     get:
@@ -232,7 +235,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Get provider embedding by UID.
+      summary: Get embeddings by provider UID.
       tags:
       - providers
     put:
@@ -245,12 +248,12 @@ paths:
         name: id
         required: true
         type: string
-      - description: Update a provider
+      - description: Update provider embeddings
         in: body
         name: provider
         required: true
         schema:
-          $ref: '#/definitions/v1.EmbeddingUpdate'
+          $ref: '#/definitions/v1.EmbeddingsUpdate'
       produces:
       - application/json
       responses:
@@ -270,8 +273,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Fetch embeddings and update the store for the provider with the given
-        UID.
+      summary: Fetch and store embeddings for the provider with the given UID.
       tags:
       - providers
   /v1/providers/{uid}/projections:
@@ -310,7 +312,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Get provider embedding projections by UID.
+      summary: Get embeddings projections by provider UID.
       tags:
       - providers
     patch:
@@ -323,12 +325,12 @@ paths:
         name: id
         required: true
         type: string
-      - description: Update embedding projections
+      - description: Update embeddings projections
         in: body
         name: provider
         required: true
         schema:
-          $ref: '#/definitions/v1.EmbeddingProjectionUpdate'
+          $ref: '#/definitions/v1.ProjectionsUpdate'
       produces:
       - application/json
       responses:
@@ -348,7 +350,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/v1.ErrorResponse'
-      summary: Recompute embeddings projections for a provider by UID and return them
+      summary: Recompute embeddings projections for a provider by UID and return them.
       tags:
       - providers
 swagger: "2.0"

@@ -38,8 +38,6 @@ func NewProvidersService(db *DB) (*ProvidersService, error) {
 // AddProvider creates a new provider and returns it.
 // It creates a new qdrant collection and raturns the new provider.
 // The collection name is the same as the UUID of the provider.
-// TODO: only create a new collection if it doesn't already exist!
-// * list aliases that match the name; if they exist, list collections for them; if they dont, create
 func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[string]any) (*v1.Provider, error) {
 	size, ok := md["size"]
 	if !ok {
@@ -50,20 +48,39 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 		return nil, v1.Errorf(v1.EINVALID, "%v: %v", ErrInvalidVectorSize, vectorSize)
 	}
 
-	var distance pb.Distance
+	var vectorDistance pb.Distance
 	dist, ok := md["distance"]
 	if !ok {
-		distance = defaultDistance
+		vectorDistance = defaultDistance
 	} else {
-		distance, ok = dist.(pb.Distance)
+		vectorDistance, ok = dist.(pb.Distance)
 		if !ok {
 			return nil, v1.Errorf(v1.EINVALID, "%v: %v", ErrInvalidVectorDistance, dist)
 		}
 	}
 
+	resp, err := p.db.col.ListAliases(ctx, &pb.ListAliasesRequest{})
+	if err != nil {
+		return nil, v1.Errorf(v1.EINTERNAL, "ListAliases error: %v", err)
+	}
+
+	for _, a := range resp.Aliases {
+		if a.AliasName == name {
+			md, err := p.getProviderMetadata(ctx, a.CollectionName)
+			if err != nil {
+				return nil, v1.Errorf(v1.EINTERNAL, "GetCollectionInfo error: %v", err)
+			}
+			return &v1.Provider{
+				UID:      a.CollectionName,
+				Name:     name,
+				Metadata: md,
+			}, nil
+		}
+	}
+
 	uid := uuid.New().String()
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
-	_, err := p.db.col.Create(ctx, &pb.CreateCollection{
+	_, err = p.db.col.Create(ctx, &pb.CreateCollection{
 		CollectionName: uid,
 		VectorsConfig: &pb.VectorsConfig{
 			Config: &pb.VectorsConfig_ParamsMap{
@@ -73,15 +90,15 @@ func (p *ProvidersService) AddProvider(ctx context.Context, name string, md map[
 						// is the "default" point vector.
 						"": {
 							Size:     vectorSize,
-							Distance: distance,
+							Distance: vectorDistance,
 						},
 						"2D": {
 							Size:     2,
-							Distance: distance,
+							Distance: vectorDistance,
 						},
 						"3D": {
 							Size:     3,
-							Distance: distance,
+							Distance: vectorDistance,
 						},
 					},
 				},
@@ -141,9 +158,14 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 
 	px := make([]*v1.Provider, 0, len(providers))
 	for uid, alias := range providers {
+		md, err := p.getProviderMetadata(ctx, uid)
+		if err != nil {
+			return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "GetCollectionInfo error: %v", err)
+		}
 		px = append(px, &v1.Provider{
-			UID:  uid,
-			Name: alias,
+			UID:      uid,
+			Name:     alias,
+			Metadata: md,
 		})
 	}
 	count = len(px)
@@ -162,7 +184,7 @@ func (p *ProvidersService) GetProviders(ctx context.Context, filter v1.ProviderF
 func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v1.Provider, error) {
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 
-	// * fetch aliases for the given collection
+	// fetch aliases for the given collection
 	resp, err := p.db.httpClient.AliasList(ctx, uid)
 	if err != nil {
 		return nil, v1.Errorf(v1.EINTERNAL, "AliasList error %v", err)
@@ -174,9 +196,15 @@ func (p *ProvidersService) GetProviderByUID(ctx context.Context, uid string) (*v
 	}
 	alias = resp.Result.Aliases[0].Name
 
+	md, err := p.getProviderMetadata(ctx, uid)
+	if err != nil {
+		return nil, v1.Errorf(v1.EINTERNAL, "GetCollectionInfo error: %v", err)
+	}
+
 	return &v1.Provider{
-		UID:  uid,
-		Name: alias,
+		UID:      uid,
+		Name:     alias,
+		Metadata: md,
 	}, nil
 }
 
@@ -210,7 +238,6 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 	if err != nil {
 		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 	}
-	next := resp.NextPageOffset.String()
 
 	points := resp.GetResult()
 	embs := make([]v1.Embedding, len(points))
@@ -230,7 +257,13 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 		})
 	}
 
-	return embs, v1.Page{Next: &next}, nil
+	page := v1.Page{}
+	if resp.NextPageOffset != nil {
+		next := resp.NextPageOffset.String()
+		page.Next = &next
+	}
+
+	return embs, page, nil
 }
 
 // GetProviderProjections returns embeddings projections for the provider with the given uid.
@@ -263,9 +296,14 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 	if err != nil {
 		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 	}
-	next := resp.NextPageOffset.String()
 
 	points := resp.GetResult()
+
+	page := v1.Page{}
+	if resp.NextPageOffset != nil {
+		next := resp.NextPageOffset.String()
+		page.Next = &next
+	}
 
 	if dim := filter.Dim; dim != nil {
 		if *dim != v1.Dim2D && *dim != v1.Dim3D {
@@ -285,7 +323,7 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 				})
 			}
 		}
-		return map[v1.Dim][]v1.Embedding{*filter.Dim: projs}, v1.Page{Next: &next}, nil
+		return map[v1.Dim][]v1.Embedding{*filter.Dim: projs}, page, nil
 	}
 
 	res2DProjs := make([]v1.Embedding, len(points))
@@ -313,12 +351,12 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 	return map[v1.Dim][]v1.Embedding{
 		v1.Dim2D: res2DProjs,
 		v1.Dim3D: res3DProjs,
-	}, v1.Page{Next: &next}, nil
+	}, page, nil
 }
 
 // UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
 func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embed v1.Embedding, proj v1.Projection) (*v1.Embedding, error) {
-	// fetch all points so we can compute PCA
+	// fetch all points so we can compute projections
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 	req := &pb.ScrollPoints{
 		CollectionName: uid,
@@ -372,7 +410,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	for {
 		resp, err := p.db.pts.Scroll(ctx, req)
 		if err != nil {
-			return nil, err
+			return nil, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 		}
 		next := resp.NextPageOffset
 
@@ -433,7 +471,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		Wait:           &waitUpsert,
 		Points:         vectors,
 	}); err != nil {
-		return nil, err
+		return nil, v1.Errorf(v1.EINTERNAL, "UpdateVectors error %v", err)
 	}
 
 	return &embed, nil
@@ -506,11 +544,107 @@ func (p *ProvidersService) DropProviderEmbeddings(ctx context.Context, uid strin
 }
 
 // ComputeProviderProjections recomputes all projections from scratch for the provider with the given UID.
-// nolint:revive
 func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid string, proj v1.Projection) error {
-	// TODO
-	// * get all embeddings
-	// * compute projetions for each
-	// * update projections vectors
-	return v1.Errorf(v1.ENOTIMPLEMENTED, "ComputeProviderProjections")
+	// NOTE: tread carefully, as this can shit memory pants on large collections!
+	// fetch all points so we can compute projections
+	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+	req := &pb.ScrollPoints{
+		CollectionName: uid,
+		WithVectors: &pb.WithVectorsSelector{
+			SelectorOptions: &pb.WithVectorsSelector_Enable{
+				Enable: true,
+			},
+		},
+		WithPayload: &pb.WithPayloadSelector{
+			SelectorOptions: &pb.WithPayloadSelector_Enable{
+				Enable: true,
+			},
+		},
+	}
+
+	embs := []v1.Embedding{}
+	for {
+		resp, err := p.db.pts.Scroll(ctx, req)
+		if err != nil {
+			return v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
+		}
+		next := resp.NextPageOffset
+
+		for _, p := range resp.GetResult() {
+			vec := p.GetVectors().GetVector()
+			// TODO: grab metadata from p.Payload
+			vals := make([]float64, 0, len(vec.Data))
+			for _, val := range vec.Data {
+				vals = append(vals, float64(val))
+			}
+			embs = append(embs, v1.Embedding{
+				UID:    p.Id.String(),
+				Values: vals,
+			})
+		}
+		// stop paging we're done
+		if next == nil {
+			break
+		}
+		req.Offset = next
+	}
+
+	projs, err := projection.Compute(embs, proj)
+	if err != nil {
+		return v1.Errorf(v1.EINTERNAL, "Compute error %v", err)
+	}
+
+	vectors := make([]*pb.PointVectors, 0, len(projs))
+
+	for dim, dimProjs := range projs {
+		for i := range dimProjs {
+			data := make([]float32, 0, len(dimProjs[i].Values))
+			for _, val := range dimProjs[i].Values {
+				data = append(data, float32(val))
+			}
+			vectors = append(vectors, &pb.PointVectors{
+				Id: &pb.PointId{
+					PointIdOptions: &pb.PointId_Uuid{
+						Uuid: embs[i].UID,
+					},
+				},
+				Vectors: &pb.Vectors{
+					VectorsOptions: &pb.Vectors_Vectors{
+						Vectors: &pb.NamedVectors{
+							Vectors: map[string]*pb.Vector{
+								string(dim): {Data: data},
+							},
+						},
+					},
+				},
+			})
+		}
+	}
+
+	// update vectors on the new embedding point
+	waitUpsert := true
+	if _, err := p.db.pts.UpdateVectors(ctx, &pb.UpdatePointVectors{
+		CollectionName: uid,
+		Wait:           &waitUpsert,
+		Points:         vectors,
+	}); err != nil {
+		return v1.Errorf(v1.EINTERNAL, "UpdateVectors error %v", err)
+	}
+	return nil
+}
+
+// getProviderMetadata returns metadata for the provider with the given uid.
+func (p *ProvidersService) getProviderMetadata(ctx context.Context, uid string) (map[string]any, error) {
+	col, err := p.db.col.Get(ctx, &pb.GetCollectionInfoRequest{CollectionName: uid})
+	if err != nil {
+		return nil, v1.Errorf(v1.EINTERNAL, "GetCollection error: %v", err)
+	}
+	params := col.Result.Config.Params.GetVectorsConfig().GetParamsMap()
+
+	md := make(map[string]any)
+
+	md["size"] = params.Map[""].Size
+	md["distance"] = params.Map[""].Distance
+
+	return md, nil
 }
