@@ -21,7 +21,7 @@ type Embedding struct {
 	// because the API is consumed by ECharts and
 	// it's just sad ECharts expects value slice.
 	// We could handle that in JS but who can be bothered?
-	Values []float64 `json:"value"`
+	Values []float64 `json:"value,omitempty"`
 	// Metadata for the given embedding vector.
 	Metadata map[string]any `json:"metadata,omitempty"`
 }

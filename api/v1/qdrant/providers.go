@@ -246,15 +246,17 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 		// NOTE: this is a bit counter-intuitive; point is a default
 		// vector which is essentially an unnamed vector in the vector map
 		vec := p.GetVectors().GetVectors()
-		// TODO: grab metadata from p.Payload
-		vals := make([]float64, 0, len(vec.Vectors[""].Data))
-		for _, val := range vec.Vectors[""].Data {
-			vals = append(vals, float64(val))
+		if vec != nil {
+			// TODO: grab metadata from p.Payload
+			vals := make([]float64, 0, len(vec.Vectors[""].Data))
+			for _, val := range vec.Vectors[""].Data {
+				vals = append(vals, float64(val))
+			}
+			embs = append(embs, v1.Embedding{
+				UID:    p.Id.GetUuid(),
+				Values: vals,
+			})
 		}
-		embs = append(embs, v1.Embedding{
-			UID:    p.Id.String(),
-			Values: vals,
-		})
 	}
 
 	page := v1.Page{}
@@ -317,7 +319,7 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 			// NamedVectors so we need to dig in 2 levels down.
 			vecs := p.GetVectors().GetVectors()
 			if vecs != nil {
-				vals := getNamedVecVals(vecs, string(*dim))
+				vals := getVecVals(vecs, string(*dim))
 				projs = append(projs, v1.Embedding{
 					Values: vals,
 				})
@@ -326,8 +328,8 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		return map[v1.Dim][]v1.Embedding{*filter.Dim: projs}, page, nil
 	}
 
-	res2DProjs := make([]v1.Embedding, len(points))
-	res3DProjs := make([]v1.Embedding, len(points))
+	res2DProjs := make([]v1.Embedding, 0, len(points))
+	res3DProjs := make([]v1.Embedding, 0, len(points))
 
 	for _, p := range points {
 		// NOTE: we call GetVectors twice because we use
@@ -337,12 +339,12 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		// this means there are no projections for this embedding.
 		if vecs != nil {
 			// 2D projections
-			proj2DVals := getNamedVecVals(vecs, string(v1.Dim2D))
+			proj2DVals := getVecVals(vecs, string(v1.Dim2D))
 			res2DProjs = append(res2DProjs, v1.Embedding{
 				Values: proj2DVals,
 			})
 			// 3D projections
-			proj3DVals := getNamedVecVals(vecs, string(v1.Dim3D))
+			proj3DVals := getVecVals(vecs, string(v1.Dim3D))
 			res3DProjs = append(res3DProjs, v1.Embedding{
 				Values: proj3DVals,
 			})
@@ -358,19 +360,6 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embed v1.Embedding, proj v1.Projection) (*v1.Embedding, error) {
 	// fetch all points so we can compute projections
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
-	req := &pb.ScrollPoints{
-		CollectionName: uid,
-		WithVectors: &pb.WithVectorsSelector{
-			SelectorOptions: &pb.WithVectorsSelector_Enable{
-				Enable: true,
-			},
-		},
-		WithPayload: &pb.WithPayloadSelector{
-			SelectorOptions: &pb.WithPayloadSelector_Enable{
-				Enable: true,
-			},
-		},
-	}
 
 	// create a new embedding point
 	data := make([]float32, 0, len(embed.Values))
@@ -406,6 +395,20 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 
 	// Collect all embeddings and calculate projections.
 	// NOTE: tread carefully, as this can shit memory pants on large collections!
+	req := &pb.ScrollPoints{
+		CollectionName: uid,
+		WithVectors: &pb.WithVectorsSelector{
+			SelectorOptions: &pb.WithVectorsSelector_Enable{
+				Enable: true,
+			},
+		},
+		WithPayload: &pb.WithPayloadSelector{
+			SelectorOptions: &pb.WithPayloadSelector_Enable{
+				Enable: true,
+			},
+		},
+	}
+
 	embs := []v1.Embedding{}
 	for {
 		resp, err := p.db.pts.Scroll(ctx, req)
@@ -416,15 +419,17 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 
 		for _, p := range resp.GetResult() {
 			vec := p.GetVectors().GetVector()
-			// TODO: grab metadata from p.Payload
-			vals := make([]float64, 0, len(vec.Data))
-			for _, val := range vec.Data {
-				vals = append(vals, float64(val))
+			if vec != nil {
+				// TODO: grab metadata from p.Payload
+				vals := make([]float64, 0, len(vec.Data))
+				for _, val := range vec.Data {
+					vals = append(vals, float64(val))
+				}
+				embs = append(embs, v1.Embedding{
+					UID:    p.Id.GetUuid(),
+					Values: vals,
+				})
 			}
-			embs = append(embs, v1.Embedding{
-				UID:    p.Id.String(),
-				Values: vals,
-			})
 		}
 		// stop paging we're done
 		if next == nil {
@@ -464,6 +469,13 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 			})
 		}
 	}
+
+	// TODO: remove me
+	//for _, v := range vectors {
+	//	for dim, vec := range v.Vectors.GetVectors().GetVectors() {
+	//		fmt.Printf("updating point: %#v with %v: %v\n", v.Id.GetUuid(), dim, vec.Data)
+	//	}
+	//}
 
 	// update vectors on the new embedding point
 	if _, err := p.db.pts.UpdateVectors(ctx, &pb.UpdatePointVectors{
@@ -578,7 +590,7 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 				vals = append(vals, float64(val))
 			}
 			embs = append(embs, v1.Embedding{
-				UID:    p.Id.String(),
+				UID:    p.Id.GetUuid(),
 				Values: vals,
 			})
 		}

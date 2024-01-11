@@ -58,7 +58,7 @@ func PCA(embs []v1.Embedding, projDim v1.Dim) ([]v1.Embedding, error) {
 		if embs[i].Metadata != nil {
 			metadata = maps.Clone(embs[i].Metadata)
 		}
-		metadata["projections"] = v1.PCA
+		metadata["projection"] = v1.PCA
 		pcas = append(pcas, v1.Embedding{
 			Values:   proj.RawRowView(i),
 			Metadata: metadata,
@@ -109,7 +109,7 @@ func TSNE(embs []v1.Embedding, projDim v1.Dim) ([]v1.Embedding, error) {
 	return tsnes, nil
 }
 
-// Compute computes p projections for embeddings embs and returns them.
+// Compute computes p projections (2D and 3D) for embeddings embs and returns them.
 func Compute(embs []v1.Embedding, p v1.Projection) (map[v1.Dim][]v1.Embedding, error) {
 	var (
 		err    error
@@ -137,7 +137,7 @@ func Compute(embs []v1.Embedding, p v1.Projection) (map[v1.Dim][]v1.Embedding, e
 			return nil, err
 		}
 	default:
-		return nil, v1.Errorf(v1.EINVALID, "invalid projection: %v", p)
+		return nil, fmt.Errorf("invalid projection: %v", p)
 
 	}
 	return map[v1.Dim][]v1.Embedding{
