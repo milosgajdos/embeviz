@@ -231,12 +231,13 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 		req.Limit = &limit
 	}
 
-	count := 0
+	page := v1.Page{}
+
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 
 	resp, err := p.db.pts.Scroll(ctx, req)
 	if err != nil {
-		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
+		return nil, page, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 	}
 
 	points := resp.GetResult()
@@ -259,9 +260,8 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 		}
 	}
 
-	page := v1.Page{}
 	if resp.NextPageOffset != nil {
-		next := resp.NextPageOffset.String()
+		next := resp.NextPageOffset.GetUuid()
 		page.Next = &next
 	}
 
@@ -291,26 +291,25 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 		req.Limit = &limit
 	}
 
-	count := 0
+	page := v1.Page{}
+
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 
 	resp, err := p.db.pts.Scroll(ctx, req)
 	if err != nil {
-		return nil, v1.Page{Count: &count}, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
+		return nil, page, v1.Errorf(v1.EINTERNAL, "Scroll error %v", err)
 	}
 
 	points := resp.GetResult()
 
-	page := v1.Page{}
 	if resp.NextPageOffset != nil {
-		next := resp.NextPageOffset.String()
+		next := resp.NextPageOffset.GetUuid()
 		page.Next = &next
 	}
 
 	if dim := filter.Dim; dim != nil {
 		if *dim != v1.Dim2D && *dim != v1.Dim3D {
-			return nil, v1.Page{Count: &count},
-				v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
+			return nil, page, v1.Errorf(v1.EINVALID, "invalid dimension %v for provider %q", *dim, uid)
 		}
 		projs := make([]v1.Embedding, len(points))
 
@@ -366,17 +365,25 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	for _, val := range embed.Values {
 		data = append(data, float32(val))
 	}
+	pointUID := embed.UID
+	if pointUID == "" {
+		pointUID = uuid.NewString()
+	}
 	upsertPoints := []*pb.PointStruct{
 		{
 			Id: &pb.PointId{
 				PointIdOptions: &pb.PointId_Uuid{
-					Uuid: uuid.NewString(),
+					Uuid: pointUID,
 				},
 			},
 			Vectors: &pb.Vectors{
-				VectorsOptions: &pb.Vectors_Vector{
-					Vector: &pb.Vector{
-						Data: data,
+				VectorsOptions: &pb.Vectors_Vectors{
+					Vectors: &pb.NamedVectors{
+						Vectors: map[string]*pb.Vector{
+							"":   {Data: data},
+							"2D": {Data: []float32{0, 0}},
+							"3D": {Data: []float32{0, 0, 0}},
+						},
 					},
 				},
 			},
@@ -384,6 +391,9 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 			Payload: map[string]*pb.Value{},
 		},
 	}
+	// TODO: can we avoid upserting duplicate points ?
+	// duplicate meaning similar vectors or the same vectors i.e.
+	// that have the same data not necessarily the same UUID
 	waitUpsert := true
 	if _, err := p.db.pts.Upsert(ctx, &pb.UpsertPoints{
 		CollectionName: uid,
@@ -410,6 +420,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	}
 
 	embs := []v1.Embedding{}
+
 	for {
 		resp, err := p.db.pts.Scroll(ctx, req)
 		if err != nil {
@@ -418,11 +429,11 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		next := resp.NextPageOffset
 
 		for _, p := range resp.GetResult() {
-			vec := p.GetVectors().GetVector()
-			if vec != nil {
+			vecs := p.GetVectors().GetVectors()
+			if vecs != nil {
 				// TODO: grab metadata from p.Payload
-				vals := make([]float64, 0, len(vec.Data))
-				for _, val := range vec.Data {
+				vals := make([]float64, 0, len(vecs.Vectors[""].Data))
+				for _, val := range vecs.Vectors[""].Data {
 					vals = append(vals, float64(val))
 				}
 				embs = append(embs, v1.Embedding{
@@ -443,45 +454,40 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		return nil, v1.Errorf(v1.EINTERNAL, "Compute error %v", err)
 	}
 
-	vectors := make([]*pb.PointVectors, 0, len(projs))
+	pointVecs := make([]*pb.PointVectors, 0, len(embs))
 
-	for dim, dimProjs := range projs {
-		for i := range dimProjs {
+	for i, emb := range embs {
+		pv := &pb.PointVectors{
+			Id: &pb.PointId{
+				PointIdOptions: &pb.PointId_Uuid{
+					Uuid: emb.UID,
+				},
+			},
+		}
+		namedVecs := make(map[string]*pb.Vector)
+		for dim, dimProjs := range projs {
 			data := make([]float32, 0, len(dimProjs[i].Values))
 			for _, val := range dimProjs[i].Values {
 				data = append(data, float32(val))
 			}
-			vectors = append(vectors, &pb.PointVectors{
-				Id: &pb.PointId{
-					PointIdOptions: &pb.PointId_Uuid{
-						Uuid: embs[i].UID,
-					},
-				},
-				Vectors: &pb.Vectors{
-					VectorsOptions: &pb.Vectors_Vectors{
-						Vectors: &pb.NamedVectors{
-							Vectors: map[string]*pb.Vector{
-								string(dim): {Data: data},
-							},
-						},
-					},
-				},
-			})
+			namedVecs[string(dim)] = &pb.Vector{
+				Data: data,
+			}
 		}
+		pv.Vectors = &pb.Vectors{
+			VectorsOptions: &pb.Vectors_Vectors{
+				Vectors: &pb.NamedVectors{
+					Vectors: namedVecs,
+				},
+			},
+		}
+		pointVecs = append(pointVecs, pv)
 	}
 
-	// TODO: remove me
-	//for _, v := range vectors {
-	//	for dim, vec := range v.Vectors.GetVectors().GetVectors() {
-	//		fmt.Printf("updating point: %#v with %v: %v\n", v.Id.GetUuid(), dim, vec.Data)
-	//	}
-	//}
-
-	// update vectors on the new embedding point
 	if _, err := p.db.pts.UpdateVectors(ctx, &pb.UpdatePointVectors{
 		CollectionName: uid,
 		Wait:           &waitUpsert,
-		Points:         vectors,
+		Points:         pointVecs,
 	}); err != nil {
 		return nil, v1.Errorf(v1.EINTERNAL, "UpdateVectors error %v", err)
 	}
@@ -560,6 +566,7 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 	// NOTE: tread carefully, as this can shit memory pants on large collections!
 	// fetch all points so we can compute projections
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
+
 	req := &pb.ScrollPoints{
 		CollectionName: uid,
 		WithVectors: &pb.WithVectorsSelector{
@@ -575,6 +582,7 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 	}
 
 	embs := []v1.Embedding{}
+
 	for {
 		resp, err := p.db.pts.Scroll(ctx, req)
 		if err != nil {
@@ -583,16 +591,18 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 		next := resp.NextPageOffset
 
 		for _, p := range resp.GetResult() {
-			vec := p.GetVectors().GetVector()
-			// TODO: grab metadata from p.Payload
-			vals := make([]float64, 0, len(vec.Data))
-			for _, val := range vec.Data {
-				vals = append(vals, float64(val))
+			vecs := p.GetVectors().GetVectors()
+			if vecs != nil {
+				// TODO: grab metadata from p.Payload
+				vals := make([]float64, 0, len(vecs.Vectors[""].Data))
+				for _, val := range vecs.Vectors[""].Data {
+					vals = append(vals, float64(val))
+				}
+				embs = append(embs, v1.Embedding{
+					UID:    p.Id.GetUuid(),
+					Values: vals,
+				})
 			}
-			embs = append(embs, v1.Embedding{
-				UID:    p.Id.GetUuid(),
-				Values: vals,
-			})
 		}
 		// stop paging we're done
 		if next == nil {
@@ -606,42 +616,45 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 		return v1.Errorf(v1.EINTERNAL, "Compute error %v", err)
 	}
 
-	vectors := make([]*pb.PointVectors, 0, len(projs))
+	pointVecs := make([]*pb.PointVectors, 0, len(embs))
 
-	for dim, dimProjs := range projs {
-		for i := range dimProjs {
+	for i, emb := range embs {
+		pv := &pb.PointVectors{
+			Id: &pb.PointId{
+				PointIdOptions: &pb.PointId_Uuid{
+					Uuid: emb.UID,
+				},
+			},
+		}
+		namedVecs := make(map[string]*pb.Vector)
+		for dim, dimProjs := range projs {
 			data := make([]float32, 0, len(dimProjs[i].Values))
 			for _, val := range dimProjs[i].Values {
 				data = append(data, float32(val))
 			}
-			vectors = append(vectors, &pb.PointVectors{
-				Id: &pb.PointId{
-					PointIdOptions: &pb.PointId_Uuid{
-						Uuid: embs[i].UID,
-					},
-				},
-				Vectors: &pb.Vectors{
-					VectorsOptions: &pb.Vectors_Vectors{
-						Vectors: &pb.NamedVectors{
-							Vectors: map[string]*pb.Vector{
-								string(dim): {Data: data},
-							},
-						},
-					},
-				},
-			})
+			namedVecs[string(dim)] = &pb.Vector{
+				Data: data,
+			}
 		}
+		pv.Vectors = &pb.Vectors{
+			VectorsOptions: &pb.Vectors_Vectors{
+				Vectors: &pb.NamedVectors{
+					Vectors: namedVecs,
+				},
+			},
+		}
+		pointVecs = append(pointVecs, pv)
 	}
 
-	// update vectors on the new embedding point
 	waitUpsert := true
 	if _, err := p.db.pts.UpdateVectors(ctx, &pb.UpdatePointVectors{
 		CollectionName: uid,
 		Wait:           &waitUpsert,
-		Points:         vectors,
+		Points:         pointVecs,
 	}); err != nil {
 		return v1.Errorf(v1.EINTERNAL, "UpdateVectors error %v", err)
 	}
+
 	return nil
 }
 

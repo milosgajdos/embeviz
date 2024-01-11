@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 	"github.com/milosgajdos/go-embeddings"
 	"github.com/milosgajdos/go-embeddings/cohere"
@@ -65,6 +66,7 @@ func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingsUpdate
 		copy(vals, embs[0].Vector)
 	}
 	return &v1.Embedding{
+		UID:      uuid.NewString(),
 		Values:   vals,
 		Metadata: req.Metadata,
 	}, nil
