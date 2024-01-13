@@ -39,6 +39,7 @@ As a result of this you must supply specific environment variables when you run 
 
 > [!WARNING]
 > By default the API stores the embeddings in an in-memory store (it's a major Go maps hack!)
+> The only vector store currently supported is [qdrant](https://qdrant.tech/). See the [docs](./api/v1/qdrant).
 
 # Build
 
@@ -82,10 +83,8 @@ The API docs should be available on [http://localhost:5050/api/v1/docs](http://l
 
 # TODO
 
-* [ ] Clean up the code: both the Go and React
-* [ ] Clean up tests and add more of them
-* [ ] Add support for a vector DB to store the embeddings in
-* [ ] Embed the SPA and all its assets into the Go binary
+* [ ] Clean up the code: both Go and React
+* [ ] Embed the SPA into the Go binary
 
 # Contributing
 
