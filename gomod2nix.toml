@@ -61,6 +61,9 @@ schema = 3
   [mod."github.com/milosgajdos/go-embeddings"]
     version = "v0.1.0"
     hash = "sha256-Lxa4LifYVu6n3saqlvUd+iW7MAV9gI0U6eFDH9JlDWY="
+  [mod."github.com/qdrant/go-client"]
+    version = "v1.7.0"
+    hash = "sha256-188Jj9tHCOB9GS+DIvQ46Nn8fzrDV2cvYnWqbKiSQv8="
   [mod."github.com/rivo/uniseg"]
     version = "v0.4.4"
     hash = "sha256-B8tbL9K6ICLdm0lEhs9+h4cpjAfvFtNiFMGvQZmw0bM="
@@ -91,6 +94,9 @@ schema = 3
   [mod."golang.org/x/sys"]
     version = "v0.15.0"
     hash = "sha256-n7TlABF6179RzGq3gctPDKDPRtDfnwPdjNCMm8ps2KY="
+  [mod."golang.org/x/text"]
+    version = "v0.14.0"
+    hash = "sha256-yh3B0tom1RfzQBf1RNmfdNWF1PtiqxV41jW1GVS6JAg="
   [mod."golang.org/x/tools"]
     version = "v0.16.1"
     hash = "sha256-zIAwVvY/5/rPDebMDpR67CR7b+GtFmGWw6AOhxIkcfI="
@@ -100,6 +106,12 @@ schema = 3
   [mod."google.golang.org/appengine"]
     version = "v1.6.7"
     hash = "sha256-zIxGRHiq4QBvRqkrhMGMGCaVL4iM4TtlYpAi/hrivS4="
+  [mod."google.golang.org/genproto/googleapis/rpc"]
+    version = "v0.0.0-20230530153820-e85fd2cbaebc"
+    hash = "sha256-udSELGkrQbc6rCAXol7l7wyi23hJ97tUIxyVizFHya0="
+  [mod."google.golang.org/grpc"]
+    version = "v1.55.0"
+    hash = "sha256-UT1/x6XSkv1o2rJC2DI8CPvyB+nsFYUcZqtCPOdg42M="
   [mod."google.golang.org/protobuf"]
     version = "v1.31.0"
     hash = "sha256-UdIk+xRaMfdhVICvKRk1THe3R1VU+lWD8hqoW/y8jT0="
