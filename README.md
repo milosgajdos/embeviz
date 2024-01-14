@@ -53,6 +53,25 @@ SPA:
 cd ui && npm install && npm run build
 ```
 
+## Nix
+
+The project provides a simple `nix` flake tha leverages [gomod2nix](https://github.com/nix-community/gomod2nix) for consistent Go environments and builds.
+
+To get started just run
+```shell
+nix develop
+```
+
+And you'll be dropped into development shell.
+
+In addition, each command is exposed as a `nix` app so you can run them as follows:
+```shell
+nix run ".#vertexai" -- -help
+```
+
+> [!NOTE]
+> `gomod2nix` vendors dependencies into the local `nix` store so every time you add a new dependency you **must** run `gomod2nix generate` which updates the `gomod2nix.toml` file based on your `go.mod`/`go.sum`.
+
 # Run
 
 > [!IMPORTANT]
