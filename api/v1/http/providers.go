@@ -30,8 +30,8 @@ func (s *Server) registerProviderRoutes(r fiber.Router) {
 	r.Mount("/", routes)
 }
 
-// GetAllProviders returns all available providers.
-// @Summary Get all providers.
+// GetAllProviders returns all available embeddings providers.
+// @Summary Get all embeddings providers.
 // @Description Get all available providers.
 // @Tags providers
 // @Produce json
@@ -44,7 +44,8 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 	var filter v1.ProviderFilter
 	filter.Limit = v1.DefaultLimit
 
-	// NOTE(milosgajdos): we don't care if the conversion fails
+	// NOTE(milosgajdos): we don't care if the conversion fails here.
+	// If it does we'll get 0 and use the default values.
 	offset := c.QueryInt("offset")
 	limit := c.QueryInt("limit")
 
@@ -69,8 +70,8 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 	})
 }
 
-// GetProviderByUID returns the provider with the given UID.
-// @Summary Get provider by UID.
+// GetProviderByUID returns the embeddings provider with the given UID.
+// @Summary Get embeddings provider by UID.
 // @Description Returns embeddings provider with the given UID.
 // @Tags providers
 // @Produce json
@@ -104,8 +105,8 @@ func (s *Server) GetProviderByUID(c *fiber.Ctx) error {
 	return c.JSON(provider)
 }
 
-// GetProviderEmbeddings returns all stored embeddings for the given provider.
-// @Summary Get provider embedding by UID.
+// GetProviderEmbeddings returns all embeddings for the provider with the given UID.
+// @Summary Get embeddings by provider UID.
 // @Description Returns embeddings for the provider with the given UID.
 // @Tags providers
 // @Produce json
@@ -128,7 +129,8 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 	var filter v1.ProviderFilter
 	filter.Limit = v1.DefaultLimit
 
-	// NOTE(milosgajdos): we don't care if the conversion fails
+	// NOTE(milosgajdos): we don't care if the conversion fails here.
+	// If it does we'll get 0 and use the default values.
 	offset := c.QueryInt("offset")
 	limit := c.QueryInt("limit")
 
@@ -140,7 +142,7 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 		filter.Limit = limit
 	}
 
-	embeddings, page, err := s.ProvidersService.GetProviderEmbeddings(context.TODO(), uid.String(), filter)
+	embeddings, page, err := s.ProvidersService.GetProviderEmbeddings(context.Background(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -160,7 +162,7 @@ func (s *Server) GetProviderEmbeddings(c *fiber.Ctx) error {
 }
 
 // GetProviderProjections returns all stored embedding projections for the given provider.
-// @Summary Get provider embedding projections by UID.
+// @Summary Get embeddings projections by provider UID.
 // @Description Returns embedding projections for the provider with the given UID.
 // @Tags providers
 // @Produce json
@@ -183,7 +185,8 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 	var filter v1.ProviderFilter
 	filter.Limit = v1.DefaultLimit
 
-	// NOTE(milosgajdos): we don't care if the conversion fails
+	// NOTE(milosgajdos): we don't care if the conversion fails here.
+	// If it does we'll get 0 and use the default values.
 	offset := c.QueryInt("offset")
 	limit := c.QueryInt("limit")
 	if offset > 0 {
@@ -192,6 +195,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 	if limit > 0 {
 		filter.Limit = limit
 	}
+
 	dim := c.Query("dim")
 	if dim != "" {
 		switch strings.ToUpper(dim) {
@@ -204,7 +208,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 		}
 	}
 
-	projections, page, err := s.ProvidersService.GetProviderProjections(context.TODO(), uid.String(), filter)
+	projections, page, err := s.ProvidersService.GetProviderProjections(context.Background(), uid.String(), filter)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.Status(fiber.StatusNotFound).JSON(v1.ErrorResponse{
@@ -224,13 +228,13 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 }
 
 // UpdateProviderEmbeddings fetches embeddings and updates provider records.
-// @Summary Fetch embeddings and update the store for the provider with the given UID.
+// @Summary Fetch and store embeddings for the provider with the given UID.
 // @Description Update provider embeddings.
 // @Tags providers
 // @Accept json
 // @Produce json
 // @Param id path string true "Provider UID"
-// @Param provider body v1.EmbeddingUpdate true "Update a provider"
+// @Param provider body v1.EmbeddingsUpdate true "Update provider embeddings"
 // @Success 200 {object} v1.Embedding
 // @Failure 400 {object} v1.ErrorResponse
 // @Failure 404 {object} v1.ErrorResponse
@@ -251,11 +255,16 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: validate payload
-	req := new(v1.EmbeddingUpdate)
+	req := new(v1.EmbeddingsUpdate)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
 			Error: err.Error(),
+		})
+	}
+
+	if req.Text == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: fmt.Sprintf("empty text provided to %s provider", uid.String()),
 		})
 	}
 
@@ -265,8 +274,8 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: fetch this in a goroutine
-	resp, err := FetchEmbeddings(context.TODO(), embedder, req)
+	ctx := context.Background()
+	resp, err := FetchEmbeddings(ctx, embedder, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
 			Error: err.Error(),
@@ -282,9 +291,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 	}
 	resp.Metadata = req.Metadata
 
-	proj := req.Projection
-
-	emb, err := s.ProvidersService.UpdateProviderEmbeddings(context.TODO(), uid.String(), *resp, proj)
+	emb, err := s.ProvidersService.UpdateProviderEmbeddings(ctx, uid.String(), *resp, req.Projection)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.EINVALID {
 			return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
@@ -300,7 +307,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 }
 
 // DropProviderEmbeddings drops all embeddings of the provider with the given uid.
-// @Summary Delete provider embeddings by UID.
+// @Summary Delete embeddings by provider UID.
 // @Description Delete embeddings by provider UID. This also drops projections.
 // @Tags providers
 // @Produce json
@@ -317,7 +324,7 @@ func (s *Server) DropProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := s.ProvidersService.DropProviderEmbeddings(context.TODO(), uid.String()); err != nil {
+	if err := s.ProvidersService.DropProviderEmbeddings(context.Background(), uid.String()); err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.SendStatus(fiber.StatusNoContent)
 		}
@@ -330,13 +337,13 @@ func (s *Server) DropProviderEmbeddings(c *fiber.Ctx) error {
 }
 
 // ComputeProviderProjections recomputes provider projections from scratch by UID.
-// @Summary Recompute embeddings projections for a provider by UID and return them
+// @Summary Recompute embeddings projections for a provider by UID and return them.
 // @Description Recompute provider projections.
 // @Tags providers
 // @Accept json
 // @Produce json
 // @Param id path string true "Provider UID"
-// @Param provider body v1.EmbeddingProjectionUpdate true "Update embedding projections"
+// @Param provider body v1.ProjectionsUpdate true "Update embeddings projections"
 // @Success 200 {object} v1.ProjectionsResponse
 // @Success 200 {object} v1.Embedding
 // @Failure 400 {object} v1.ErrorResponse
@@ -351,8 +358,7 @@ func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
 		})
 	}
 
-	// TODO: validate payload
-	req := new(v1.EmbeddingProjectionUpdate)
+	req := new(v1.ProjectionsUpdate)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
 			Error: err.Error(),
@@ -369,9 +375,8 @@ func (s *Server) ComputeProviderProjections(c *fiber.Ctx) error {
 		req.Metadata = make(map[string]any)
 	}
 	req.Metadata["projection"] = req.Projection
-	proj := req.Projection
 
-	if err := s.ProvidersService.ComputeProviderProjections(context.TODO(), uid.String(), proj); err != nil {
+	if err := s.ProvidersService.ComputeProviderProjections(context.Background(), uid.String(), req.Projection); err != nil {
 		if code := v1.ErrorCode(err); code == v1.ENOTFOUND {
 			return c.SendStatus(fiber.StatusNoContent)
 		}

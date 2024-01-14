@@ -14,12 +14,14 @@ type Provider struct {
 
 // Embedding is vector embedding.
 type Embedding struct {
+	// UID is the unique ID for this embedding.
+	UID string `json:"uid,omitempty"`
 	// Values stores embedding vector values.
 	// NOTE: the key is set to value - singular
 	// because the API is consumed by ECharts and
 	// it's just sad ECharts expects value slice.
 	// We could handle that in JS but who can be bothered?
-	Values []float64 `json:"value"`
+	Values []float64 `json:"value,omitempty"`
 	// Metadata for the given embedding vector.
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
@@ -28,7 +30,9 @@ type Embedding struct {
 type Dim string
 
 const (
+	// Dim2D is 2D projection.
 	Dim2D Dim = "2D"
+	// Dim3D is 3D projection.
 	Dim3D Dim = "3D"
 )
 
@@ -53,16 +57,17 @@ type ProviderFilter struct {
 	Limit  int `json:"limit"`
 }
 
-// EmbeddingUpdate is used to fetch embeddings.
-type EmbeddingUpdate struct {
+// EmbeddingsUpdate is used to fetch embeddings.
+// NOTE: we call this an Update because it updates the vector store.
+type EmbeddingsUpdate struct {
 	Text       string         `json:"text"`
 	Label      string         `json:"label"`
 	Projection Projection     `json:"projection"`
 	Metadata   map[string]any `json:"metadata,omitempty"`
 }
 
-// EmbeddingProjectionUpdate is used to recompute embedding projections.
-type EmbeddingProjectionUpdate struct {
+// ProjectionsUpdate is used to recompute embedding projections.
+type ProjectionsUpdate struct {
 	Projection Projection     `json:"projection"`
 	Metadata   map[string]any `json:"metadata,omitempty"`
 }
@@ -81,7 +86,7 @@ type ProvidersService interface {
 	GetProviderProjections(ctx context.Context, uid string, filter ProviderFilter) (map[Dim][]Embedding, Page, error)
 	// UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
 	UpdateProviderEmbeddings(ctx context.Context, uid string, update Embedding, projection Projection) (*Embedding, error)
-	// DropProviderEmbeddings drops all provider embeddings from the store
+	// DropProviderEmbeddings drops all provider embeddings from the store.
 	DropProviderEmbeddings(ctx context.Context, uid string) error
 	// ComputeProviderProjections drops existing projections and recomputes anew.
 	ComputeProviderProjections(ctx context.Context, uid string, projection Projection) error

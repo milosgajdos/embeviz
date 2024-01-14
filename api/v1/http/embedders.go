@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 	"github.com/milosgajdos/go-embeddings"
 	"github.com/milosgajdos/go-embeddings/cohere"
@@ -11,9 +12,9 @@ import (
 	"github.com/milosgajdos/go-embeddings/vertexai"
 )
 
-// FetchEmbeddings fetches embeddings using the provided embedder.
+// FetchEmbeddings fetches embedding using the provided embedder.
 // It returns the fetched embedding or fails with error.
-func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingUpdate) (*v1.Embedding, error) {
+func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingsUpdate) (*v1.Embedding, error) {
 	var (
 		vals []float64
 		embs []*embeddings.Embedding
@@ -65,6 +66,7 @@ func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingUpdate)
 		copy(vals, embs[0].Vector)
 	}
 	return &v1.Embedding{
+		UID:      uuid.NewString(),
 		Values:   vals,
 		Metadata: req.Metadata,
 	}, nil

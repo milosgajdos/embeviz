@@ -14,7 +14,7 @@ type Page struct {
 	// or a string ID which allows
 	// resuming paging if provided.
 	Next *string `json:"next,omitempty"`
-	// Count is number of all
+	// Count is the number of all
 	// results if provided.
 	Count *int `json:"count,omitempty"`
 }

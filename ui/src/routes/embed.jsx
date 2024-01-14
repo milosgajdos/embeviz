@@ -23,6 +23,7 @@ export async function loader({ params }) {
 }
 
 export async function action({ request, params }) {
+  console.log(`Got request: ${request}`);
   const formData = await request.formData();
   const updates = Object.fromEntries(formData);
   console.log(updates);
@@ -42,14 +43,14 @@ export default function Embed() {
           {provider.description && <p>{provider.description}</p>}
           <div id="charts">
             <EChart
-              name="3D series"
+              name="3D projections"
               dim="3D"
               isLoading={navigation.state === "loading"}
               embeddings={embeddings["3D"]}
               styling={{ height: 300, width: 300 }}
             />
             <EChart
-              name="2D series"
+              name="2D projections"
               dim="2D"
               isLoading={navigation.state === "loading"}
               embeddings={embeddings["2D"]}
@@ -58,12 +59,12 @@ export default function Embed() {
           </div>
         </div>
       </div>
-      <UpdateDataForm />
+      <UpdateEmbedForm />
     </>
   );
 }
 
-export function UpdateDataForm() {
+export function UpdateEmbedForm() {
   const [projection, setProjection] = useState("pca");
 
   function handleProjectionChange(e) {
@@ -107,10 +108,10 @@ export function UpdateDataForm() {
               checked={projection === "tsne"}
               onChange={handleProjectionChange}
             />
-            <label htmlFor="tsne"> t-sne</label>
+            <label htmlFor="tsne"> t-SNE</label>
           </div>
         </fieldset>
-        <button type="submit">Submit</button>
+        <button type="submit">Generate</button>
       </div>
     </Form>
   );

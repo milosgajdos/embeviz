@@ -33,7 +33,6 @@ const router = createBrowserRouter(
               path: "provider/:uid/update",
               element: <Embed />,
               action: embedAction,
-              errorElement: <div>Oops! There was an error.</div>,
             },
           ],
         },
@@ -42,11 +41,11 @@ const router = createBrowserRouter(
   ],
   {
     basename: "/ui",
-  }
+  },
 );
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RouterProvider router={router} />
-  </React.StrictMode>
+  </React.StrictMode>,
 );
