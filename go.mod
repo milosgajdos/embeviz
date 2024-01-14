@@ -13,7 +13,7 @@ require (
 	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848
 	golang.org/x/oauth2 v0.15.0
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/grpc v1.55.0
+	google.golang.org/grpc v1.56.3
 )
 
 require (
