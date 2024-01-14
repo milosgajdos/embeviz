@@ -16,17 +16,13 @@ export async function loader({ params }) {
       statusText: "Not Found",
     });
   }
-  console.log(provider);
   const { embeddings } = (await getProviderProjections(params.uid)) ?? [];
-  console.log(embeddings);
   return { provider, embeddings };
 }
 
 export async function action({ request, params }) {
-  console.log(`Got request: ${request}`);
   const formData = await request.formData();
   const updates = Object.fromEntries(formData);
-  console.log(updates);
   await updateData(params.uid, updates);
   return redirect(`/provider/${params.uid}`);
 }
@@ -59,12 +55,12 @@ export default function Embed() {
           </div>
         </div>
       </div>
-      <UpdateEmbedForm />
+      <UpdateForm />
     </>
   );
 }
 
-export function UpdateEmbedForm() {
+export function UpdateForm() {
   const [projection, setProjection] = useState("pca");
 
   function handleProjectionChange(e) {
