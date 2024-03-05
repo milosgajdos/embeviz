@@ -20,7 +20,7 @@ export async function getProvider(uid) {
 
 export async function getProviderProjections(uid) {
   const resp = await fetch(
-    "http://localhost:5050/api/v1/providers/" + uid + "/projections"
+    "http://localhost:5050/api/v1/providers/" + uid + "/projections",
   );
   const embeddings = await resp.json();
   return embeddings ?? null;
@@ -34,4 +34,23 @@ export async function updateData(uid, updates) {
       "Content-Type": "application/json",
     },
   });
+}
+
+export async function deleteData(uid) {
+  await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
+    method: "DELETE",
+  });
+}
+
+export async function recomputeData(uid, updates) {
+  await fetch(
+    "http://localhost:5050/api/v1/providers/" + uid + "/projections",
+    {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
 }
