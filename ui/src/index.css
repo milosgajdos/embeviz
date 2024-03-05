@@ -55,6 +55,12 @@ button:hover {
         0 1px 2px hsla(0, 0%, 0%, 0.2);
 }
 
+/* Hover styles for the delete button */
+button#delete-btn:hover {
+    background-color: red;
+    color: white;
+}
+
 button:active {
     box-shadow: 0 0px 1px hsla(0, 0%, 0%, 0.4);
     transform: translateY(1px);
@@ -74,7 +80,7 @@ button:active {
 
 #root {
     display: flex;
-    height: 100%;
+    min-height: 100vh;
     width: 100%;
 }
 
@@ -316,5 +322,13 @@ i {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100%;
+}
+
+#embed-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    gap: 2rem;
     width: 100%;
 }

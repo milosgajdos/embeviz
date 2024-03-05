@@ -82,7 +82,7 @@ func NewServer(options ...Option) (*Server, error) {
 	s.app.Use(logger.New())
 	s.app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT",
+		AllowMethods: "GET,POST,PUT,DELETE,PATCH",
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 

@@ -28,10 +28,6 @@ const router = createBrowserRouter(
               path: "provider/:uid",
               element: <Embed />,
               loader: embedLoader,
-            },
-            {
-              path: "provider/:uid/update",
-              element: <Embed />,
               action: embedAction,
             },
           ],
