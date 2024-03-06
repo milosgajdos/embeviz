@@ -1,4 +1,11 @@
-import { Form, useLoaderData, useNavigation, redirect } from "react-router-dom";
+import {
+  Form,
+  useLoaderData,
+  useNavigation,
+  redirect,
+  useParams,
+  useRevalidator,
+} from "react-router-dom";
 import { useState } from "react";
 import {
   getProvider,
@@ -8,31 +15,11 @@ import {
 } from "../lib/embeddings";
 import EChart from "../components/echart/echart";
 
-async function getReqData(request) {
-  const formData = await request.formData();
-  return Object.fromEntries(formData);
-}
-
 export async function action({ request, params }) {
-  switch (request.method) {
-    case "POST": {
-      await updateData(params.uid, await getReqData(request));
-      break;
-    }
-    case "DELETE": {
-      const isConfirmed = window.confirm(
-        "Are you sure you want to delete the data?",
-      );
-      if (isConfirmed) {
-        await deleteData(params.uid);
-      }
-      break;
-    }
-    default: {
-      throw new Response("Unsupported operation", { status: 405 });
-    }
-  }
-  return { ok: true };
+  const formData = await request.formData();
+  const updates = Object.fromEntries(formData);
+  await updateData(params.uid, updates);
+  return redirect(`/provider/${params.uid}`);
 }
 
 export async function loader({ params }) {
@@ -51,6 +38,14 @@ export async function loader({ params }) {
 export default function Embed() {
   const { provider, embeddings } = useLoaderData();
   const navigation = useNavigation();
+  const revalidator = useRevalidator();
+
+  // NOTE: we need to "revalidate" the parent component
+  // if we delete the data so the charts are rerendered.
+  // I tried using state but that somehow never triggers render.
+  function handleDataDeleted() {
+    revalidator.revalidate();
+  }
 
   return (
     <>
@@ -76,13 +71,28 @@ export default function Embed() {
           </div>
         </div>
       </div>
-      <UpdateForm />
+      <UpdateForm onDataDeleted={handleDataDeleted} />
     </>
   );
 }
 
-export function UpdateForm() {
+export function UpdateForm({ onDataDeleted }) {
+  let params = useParams();
   const [projection, setProjection] = useState("pca");
+
+  async function handleDeleteData() {
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete the data?",
+    );
+    if (isConfirmed) {
+      try {
+        await deleteData(params.uid);
+        onDataDeleted();
+      } catch (error) {
+        console.error("Error deleting data:", error);
+      }
+    }
+  }
 
   function handleProjectionChange(e) {
     setProjection(e.target.value);
@@ -142,7 +152,7 @@ export function UpdateForm() {
       </Form>
       <div id="embed-buttons">
         <Form method="delete">
-          <button type="submit" id="delete-btn">
+          <button type="button" id="delete-btn" onClick={handleDeleteData}>
             Drop Data
           </button>
         </Form>
