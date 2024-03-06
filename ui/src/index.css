@@ -48,16 +48,28 @@ button {
 }
 
 textarea:hover,
-input:hover,
-button:hover {
+input:hover {
     box-shadow:
         0 0px 1px hsla(0, 0%, 0%, 0.6),
         0 1px 2px hsla(0, 0%, 0%, 0.2);
 }
 
+button:hover {
+    box-shadow:
+        0 0px 1px hsla(0, 0%, 0%, 0.6),
+        0 1px 2px hsla(0, 0%, 0%, 0.2);
+    background-color: blue;
+    color: white;
+}
+
 /* Hover styles for the delete button */
 button#delete-btn:hover {
     background-color: red;
+    color: white;
+}
+
+button#update-btn:hover {
+    background-color: green;
     color: white;
 }
 

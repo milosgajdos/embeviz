@@ -5,20 +5,34 @@ import {
   redirect,
   useParams,
   useRevalidator,
+  json,
 } from "react-router-dom";
 import { useState } from "react";
 import {
   getProvider,
   getProviderProjections,
-  updateData,
+  embedData,
+  computeData,
   deleteData,
 } from "../lib/embeddings";
 import EChart from "../components/echart/echart";
 
 export async function action({ request, params }) {
   const formData = await request.formData();
+  let intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
-  await updateData(params.uid, updates);
+
+  switch (intent) {
+    case "embed":
+      await embedData(params.uid, updates);
+      break;
+    case "compute":
+      await computeData(params.uid, updates);
+      break;
+    default:
+      throw json({ message: "Invalid intent" }, { status: 400 });
+  }
+
   return redirect(`/provider/${params.uid}`);
 }
 
@@ -107,7 +121,7 @@ export function UpdateForm({ onDataDeleted }) {
     <>
       <Form method="post" id="embed-form">
         <div id="embed-form-text-options">
-          <input id="label" name="label" placeholder="Label" />
+          <input id="label" name="label" placeholder="Label (Optional)" />
           <textarea
             id="text"
             name="text"
@@ -115,7 +129,6 @@ export function UpdateForm({ onDataDeleted }) {
             rows="10"
             cols="80"
             wrap="soft"
-            required
           ></textarea>
         </div>
         <div id="embed-options">
@@ -144,7 +157,12 @@ export function UpdateForm({ onDataDeleted }) {
               <label htmlFor="tsne"> t-SNE</label>
             </div>
           </fieldset>
-          <button type="submit">Embed</button>
+          <button type="submit" name="intent" value="embed">
+            Embed
+          </button>
+          <button type="submit" id="update-btn" name="intent" value="compute">
+            Compute
+          </button>
           <button type="button" id="delete-btn" onClick={handleClearFields}>
             Clear
           </button>

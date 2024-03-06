@@ -26,7 +26,7 @@ export async function getProviderProjections(uid) {
   return embeddings ?? null;
 }
 
-export async function updateData(uid, updates) {
+export async function embedData(uid, updates) {
   await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
     method: "PUT",
     body: JSON.stringify(updates),
@@ -42,7 +42,7 @@ export async function deleteData(uid) {
   });
 }
 
-export async function recomputeData(uid, updates) {
+export async function computeData(uid, updates) {
   await fetch(
     "http://localhost:5050/api/v1/providers/" + uid + "/projections",
     {
