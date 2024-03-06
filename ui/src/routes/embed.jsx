@@ -20,11 +20,19 @@ export async function action({ request, params }) {
       break;
     }
     case "DELETE": {
-      await deleteData(params.uid);
+      const isConfirmed = window.confirm(
+        "Are you sure you want to delete the data?",
+      );
+      if (isConfirmed) {
+        await deleteData(params.uid);
+      }
       break;
     }
+    default: {
+      throw new Response("Unsupported operation", { status: 405 });
+    }
   }
-  return redirect(`/provider/${params.uid}`);
+  return { ok: true };
 }
 
 export async function loader({ params }) {
@@ -94,7 +102,7 @@ export function UpdateForm() {
             id="text"
             name="text"
             placeholder="Text"
-            rows="5"
+            rows="10"
             cols="80"
             wrap="soft"
             required
