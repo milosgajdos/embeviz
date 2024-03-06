@@ -111,6 +111,12 @@ func TSNE(embs []v1.Embedding, projDim v1.Dim) ([]v1.Embedding, error) {
 
 // Compute computes p projections (2D and 3D) for embeddings embs and returns them.
 func Compute(embs []v1.Embedding, p v1.Projection) (map[v1.Dim][]v1.Embedding, error) {
+	if len(embs) == 0 {
+		return map[v1.Dim][]v1.Embedding{
+			v1.Dim2D: {},
+			v1.Dim3D: {},
+		}, nil
+	}
 	var (
 		err    error
 		proj2D []v1.Embedding
