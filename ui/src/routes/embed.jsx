@@ -96,7 +96,9 @@ export default function Embed() {
 export function UpdateForm({ onDataDeleted }) {
   let params = useParams();
   const [projection, setProjection] = useState("pca");
-  const [checked, setChecked] = useState(false);
+  const [chunking, setChunking] = useState(false);
+  const [size, setSize] = useState("2");
+  const [overlap, setOverlap] = useState("0");
 
   async function handleDeleteData() {
     const isConfirmed = window.confirm(
@@ -119,10 +121,6 @@ export function UpdateForm({ onDataDeleted }) {
   function handleClearFields() {
     document.getElementById("label").value = "";
     document.getElementById("text").value = "";
-  }
-
-  function handleChange() {
-    setChecked(!checked);
   }
 
   return (
@@ -182,11 +180,11 @@ export function UpdateForm({ onDataDeleted }) {
               type="checkbox"
               id="chunking"
               name="chunking"
-              checked={checked}
-              onChange={handleChange}
+              checked={chunking}
+              onChange={() => setChunking(!chunking)}
             />
             <label htmlFor="chunking"> Enable</label>
-            <fieldset disabled={!checked}>
+            <fieldset disabled={!chunking}>
               <legend>Options</legend>
               <div>
                 <div>
@@ -196,7 +194,8 @@ export function UpdateForm({ onDataDeleted }) {
                     id="size"
                     name="size"
                     min="2"
-                    value="2"
+                    value={size}
+                    onChange={(e) => setSize(e.target.value)}
                   />
                 </div>
                 <div>
@@ -206,7 +205,8 @@ export function UpdateForm({ onDataDeleted }) {
                     id="overlap"
                     name="overlap"
                     min="0"
-                    value="0"
+                    value={overlap}
+                    onChange={(e) => setOverlap(e.target.value)}
                   />
                 </div>
                 <br />

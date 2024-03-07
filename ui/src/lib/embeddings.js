@@ -1,6 +1,13 @@
 import { matchSorter } from "match-sorter";
 import sortBy from "sort-by";
 
+const defaultChunking = {
+  size: 2,
+  overlap: 0,
+  trim: false,
+  sep: false,
+};
+
 export async function getProviders(query) {
   const resp = await fetch("http://localhost:5050/api/v1/providers");
   const respData = await resp.json();
@@ -34,21 +41,20 @@ export async function embedData(uid, updates) {
   };
 
   if (updates.chunking === "on") {
-    data.size = 2;
-    if (updates.size) {
-      data.size = parseInt(updates.size, 10);
-    }
+    data.chunking = defaultChunking;
 
-    data.overlap = 0;
-    if (updates.overlap) {
-      data.overlap = parseInt(updates.overlap, 10);
+    if (updates.size) {
+      data.chunking.size = parseInt(updates.size, 10);
+    }
+    if (updates.chunking.overlap) {
+      data.chunking.overlap = parseInt(updates.overlap, 10);
     }
 
     if (updates.trim === "on") {
-      data.trim = true;
+      data.chunking.trim = true;
     }
     if (updates.sep === "on") {
-      data.sep = true;
+      data.chunking.sep = true;
     }
   }
 
