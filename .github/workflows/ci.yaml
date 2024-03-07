@@ -21,6 +21,9 @@ jobs:
 
     steps:
 
+    - name: Check out code
+      uses: actions/checkout@v4
+
     - name: Set up Go ${{ matrix.go }}
       uses: actions/setup-go@v4
       with:
@@ -32,9 +35,6 @@ jobs:
         node-version: 21
         cache: 'npm'
         cache-dependency-path: ui/package-lock.json
-
-    - name: Check out code
-      uses: actions/checkout@v4
 
     # copy-pasta from https://github.com/caddyserver/caddy/blob/master/.github/workflows/ci.yml
     - name: Print Go version and environment
