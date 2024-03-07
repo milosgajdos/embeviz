@@ -195,7 +195,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.Embedding"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/v1.Embedding"
+                            }
                         }
                     },
                     "400": {
@@ -376,6 +379,27 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "v1.Chunking": {
+            "type": "object",
+            "properties": {
+                "overlap": {
+                    "description": "Overlap between chunks.",
+                    "type": "integer"
+                },
+                "sep": {
+                    "description": "Sep keeps separator in chunks.",
+                    "type": "boolean"
+                },
+                "size": {
+                    "description": "Size of each chunk.",
+                    "type": "integer"
+                },
+                "trim": {
+                    "description": "Trim empty space chars.",
+                    "type": "boolean"
+                }
+            }
+        },
         "v1.Embedding": {
             "type": "object",
             "properties": {
@@ -414,6 +438,9 @@ const docTemplate = `{
         "v1.EmbeddingsUpdate": {
             "type": "object",
             "properties": {
+                "chunking": {
+                    "$ref": "#/definitions/v1.Chunking"
+                },
                 "label": {
                     "type": "string"
                 },
