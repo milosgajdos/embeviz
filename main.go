@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -35,6 +36,9 @@ const (
 	ShutdownTimeout = 10 * time.Second
 )
 
+//go:embed ui/dist/*
+var assets embed.FS
+
 func main() {
 	if err := run(os.Args); err != nil {
 		log.Fatalf("error: %v", err)
@@ -57,6 +61,7 @@ func run(args []string) error {
 		http.WithIdleTimeout(IdleTimeout),
 		http.WithReadTimeout(ReadTimeout),
 		http.WithWriteTimeout(WriteTimeout),
+		http.WithAssets(assets),
 	}
 
 	s, err := http.NewServer(options...)
