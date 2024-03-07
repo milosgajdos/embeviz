@@ -97,7 +97,6 @@ func NewServer(options ...Option) (*Server, error) {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
-	//s.app.Static("/ui", "./ui/dist")
 	s.app.Use("/ui", filesystem.New(filesystem.Config{
 		Root:       http.FS(opts.Assets),
 		PathPrefix: "ui/dist",
