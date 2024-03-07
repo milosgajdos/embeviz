@@ -104,7 +104,35 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
 
-    - name: Run linter
-      uses: golangci/golangci-lint-action@v3
+    - name: Set up Node
+      uses: actions/setup-node@v4
       with:
-        version: v1.55
+        node-version: 21
+        cache: 'npm'
+        cache-dependency-path: ui/package-lock.json
+
+    - name: Get npm cache directory
+      id: npm-cache-dir
+      shell: bash
+      run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+
+    - uses: actions/cache@v3
+      id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.npm-cache-dir.outputs.dir }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Get node dependencies
+      run: |
+        npm --prefix ui install
+
+    - name: Build node
+      run: |
+        npm --prefix ui run build
+
+    - name: Run linter
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: v1.56

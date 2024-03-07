@@ -17,3 +17,4 @@ run:
   deadline: 2m
   skip-dirs:
     - vendor
+    - ui
