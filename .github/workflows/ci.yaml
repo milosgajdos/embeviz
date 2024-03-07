@@ -26,12 +26,19 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
 
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 21
+        cache: 'npm'
+        cache-dependency-path: ui/package-lock.json
+
     - name: Check out code
       uses: actions/checkout@v4
 
     # copy-pasta from https://github.com/caddyserver/caddy/blob/master/.github/workflows/ci.yml
     - name: Print Go version and environment
-      id: vars
+      id: go-vars
       run: |
         printf "Using go at: $(which go)\n"
         printf "Go version: $(go version)\n"
@@ -39,22 +46,38 @@ jobs:
         go env
         printf "\n\nSystem environment:\n\n"
         env
-        echo "::set-output name=go_cache::$(go env GOCACHE)"
+        echo "dir=$(go env GOCACHE)" >> ${GITHUB_OUTPUT}
 
-    - name: Cache the build cache
-      uses: actions/cache@v2
+    - name: Cache the Go build cache
+      uses: actions/cache@v3
       with:
-        path: ${{ steps.vars.outputs.go_cache }}
+        path: ${{ steps.go-vars.outputs.dir }}
         key: ${{ runner.os }}-${{ matrix.go }}-go-ci-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.go }}-go-ci
 
+    - name: Get npm cache directory
+      id: npm-cache-dir
+      shell: bash
+      run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+
+    - uses: actions/cache@v3
+      id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.npm-cache-dir.outputs.dir }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Get dependencies
       run: |
+        npm --prefix ui install
         go mod download
 
     - name: Build
-      run: go build -v ./...
+      run: |
+        npm --prefix ui run build
+        go build -v ./...
 
     - name: Test
       run: go test -v ./...
