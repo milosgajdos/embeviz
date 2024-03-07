@@ -1,6 +1,6 @@
 # embeviz
 
-A simple app that helps you visualize data embeddings.
+A simple webapp that helps you visualize embeddings.
 
 > [!WARNING]
 > THIS PROJECT IS WILDLY EXPERIMENTAL AT THE MOMENT! USE AT YOUR OWN RISK!
@@ -35,7 +35,7 @@ The API provides a swagger API endpoint on `/api/v1/docs` which serves the API d
 
 The app leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like [OpenAI](https://openai.com/), etc.
 
-As a result of this you must supply specific environment variables when you run the app. The environment variables are used to initialize the API clients for fetching the embeddings. See the `README` of the `go-embeddings` module for more details.
+As a result of this you MUST supply specific environment variables when you run the app. The environment variables are used to initialize various API clients for fetching the embeddings. See the [`README`](https://github.com/milosgajdos/go-embeddings) of the `go-embeddings` module for more details.
 
 > [!WARNING]
 > By default the API stores the embeddings in an in-memory store (it's a major Go maps hack!)
@@ -93,7 +93,12 @@ OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
 
 Alternatively you can also run the following command:
 ```shell
-go run ./...
+OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
+```
+
+Or build the binary and run it like so:
+```shell
+go build && OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" ./embeviz
 ```
 
 You should now be able to access the SPA on [http://localhost:5050/ui](http://localhost:5050/ui).
@@ -103,7 +108,7 @@ The API docs should be available on [http://localhost:5050/api/v1/docs](http://l
 # TODO
 
 * [ ] Clean up the code: both Go and React
-* [ ] Embed the SPA into the Go binary
+* [x] Embed the SPA into the Go binary
 
 # Contributing
 

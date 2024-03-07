@@ -2,12 +2,15 @@ package http
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/swagger"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
@@ -34,6 +37,7 @@ type Options struct {
 	IdleTimeout  time.Duration
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
+	Assets       embed.FS
 }
 
 // Option is functional graph option.
@@ -57,6 +61,13 @@ func WithReadTimeout(t time.Duration) Option {
 func WithWriteTimeout(t time.Duration) Option {
 	return func(o *Options) {
 		o.WriteTimeout = t
+	}
+}
+
+// WithAssets
+func WithAssets(a embed.FS) Option {
+	return func(o *Options) {
+		o.Assets = a
 	}
 }
 
@@ -86,7 +97,11 @@ func NewServer(options ...Option) (*Server, error) {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
-	s.app.Static("/ui", "./ui/dist")
+	//s.app.Static("/ui", "./ui/dist")
+	s.app.Use("/ui", filesystem.New(filesystem.Config{
+		Root:       http.FS(opts.Assets),
+		PathPrefix: "ui/dist",
+	}))
 
 	api := s.app.Group("/api")
 	v1 := api.Group("/v1")
