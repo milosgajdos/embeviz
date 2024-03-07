@@ -165,7 +165,7 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 
 // UpdateProviderEmbeddings updates embeddings of a specific provider.
 // nolint:revive
-func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embed v1.Embedding, prj v1.Projection) (*v1.Embedding, error) {
+func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embeds []v1.Embedding, prj v1.Projection) ([]v1.Embedding, error) {
 	p.db.Lock()
 	defer p.db.Unlock()
 	if p.db.Closed {
@@ -179,7 +179,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	embs := provider[emb].([]v1.Embedding)
 	newEmbs := make([]v1.Embedding, len(embs))
 	copy(newEmbs, embs)
-	newEmbs = append(newEmbs, embed)
+	newEmbs = append(newEmbs, embeds...)
 
 	prjs, err := projection.Compute(newEmbs, prj)
 	if err != nil {
@@ -189,7 +189,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 	provider[emb] = newEmbs
 	provider[proj] = prjs
 
-	return &embed, nil
+	return embeds, nil
 }
 
 // DropProviderEmbeddings drops all embeddings for the provider with the given uid.

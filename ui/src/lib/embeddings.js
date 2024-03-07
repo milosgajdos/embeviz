@@ -27,9 +27,36 @@ export async function getProviderProjections(uid) {
 }
 
 export async function embedData(uid, updates) {
+  let data = {
+    text: updates.text,
+    label: updates.label,
+    projection: updates.projection,
+  };
+
+  if (updates.chunking === "on") {
+    data.size = 2;
+    if (updates.size) {
+      data.size = parseInt(updates.size, 10);
+    }
+
+    data.overlap = 0;
+    if (updates.overlap) {
+      data.overlap = parseInt(updates.overlap, 10);
+    }
+
+    if (updates.trim === "on") {
+      data.trim = true;
+    }
+    if (updates.sep === "on") {
+      data.sep = true;
+    }
+  }
+
+  console.log(data);
+
   await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
     method: "PUT",
-    body: JSON.stringify(updates),
+    body: JSON.stringify(data),
     headers: {
       "Content-Type": "application/json",
     },

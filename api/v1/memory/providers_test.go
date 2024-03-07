@@ -9,7 +9,7 @@ import (
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 )
 
-func TestCreateGraph(t *testing.T) {
+func TestAddProvider(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -335,24 +335,26 @@ func TestUpdateProviderEmbeddings(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		emb := v1.Embedding{
-			Values: []float64{1.0, 2.0, 3.0, 4.0},
+		embs := []v1.Embedding{
+			{Values: []float64{1.0, 2.0, 3.0, 4.0}},
 		}
 
-		e, err := ps.UpdateProviderEmbeddings(context.TODO(), p.UID, emb, v1.PCA)
+		ex, err := ps.UpdateProviderEmbeddings(context.TODO(), p.UID, embs, v1.PCA)
 		if err != nil {
 			t.Fatalf("expected error: %s", err)
 		}
 
-		if !reflect.DeepEqual(e.Values, emb.Values) {
-			t.Fatalf("expected: %v, got: %v", emb.Values, e.Values)
+		for i := range ex {
+			if !reflect.DeepEqual(ex[i].Values, embs[i].Values) {
+				t.Fatalf("expected: %v, got: %v", embs[i].Values, ex[i].Values)
+			}
 		}
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
 		ps := MustProvidersService(t, DSN)
 
-		_, err := ps.UpdateProviderEmbeddings(context.TODO(), "fooUID", v1.Embedding{}, v1.PCA)
+		_, err := ps.UpdateProviderEmbeddings(context.TODO(), "fooUID", []v1.Embedding{}, v1.PCA)
 		if v1.ErrorCode(err) != v1.ENOTFOUND {
 			t.Fatalf("expected error: %s, got: %s", v1.ENOTFOUND, v1.ErrorCode(err))
 		}
