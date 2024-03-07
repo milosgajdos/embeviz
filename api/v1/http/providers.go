@@ -235,7 +235,7 @@ func (s *Server) GetProviderProjections(c *fiber.Ctx) error {
 // @Produce json
 // @Param id path string true "Provider UID"
 // @Param provider body v1.EmbeddingsUpdate true "Update provider embeddings"
-// @Success 200 {object} v1.Embedding
+// @Success 200 {object} []v1.Embedding
 // @Failure 400 {object} v1.ErrorResponse
 // @Failure 404 {object} v1.ErrorResponse
 // @Failure 500 {object} v1.ErrorResponse
@@ -275,7 +275,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 	}
 
 	ctx := context.Background()
-	resp, err := FetchEmbeddings(ctx, embedder, req)
+	embs, err := FetchEmbeddings(ctx, embedder, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
 			Error: err.Error(),
@@ -289,9 +289,11 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 	if req.Label != "" {
 		req.Metadata["label"] = req.Label
 	}
-	resp.Metadata = req.Metadata
+	for _, e := range embs {
+		e.Metadata = req.Metadata
+	}
 
-	emb, err := s.ProvidersService.UpdateProviderEmbeddings(ctx, uid.String(), *resp, req.Projection)
+	res, err := s.ProvidersService.UpdateProviderEmbeddings(ctx, uid.String(), embs, req.Projection)
 	if err != nil {
 		if code := v1.ErrorCode(err); code == v1.EINVALID {
 			return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
@@ -303,7 +305,7 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(emb)
+	return c.JSON(res)
 }
 
 // DropProviderEmbeddings drops all embeddings of the provider with the given uid.

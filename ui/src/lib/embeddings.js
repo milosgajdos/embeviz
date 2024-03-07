@@ -1,6 +1,13 @@
 import { matchSorter } from "match-sorter";
 import sortBy from "sort-by";
 
+const defaultChunking = {
+  size: 2,
+  overlap: 0,
+  trim: false,
+  sep: false,
+};
+
 export async function getProviders(query) {
   const resp = await fetch("http://localhost:5050/api/v1/providers");
   const respData = await resp.json();
@@ -27,9 +34,35 @@ export async function getProviderProjections(uid) {
 }
 
 export async function embedData(uid, updates) {
+  let data = {
+    text: updates.text,
+    label: updates.label,
+    projection: updates.projection,
+  };
+
+  if (updates.chunking === "on") {
+    data.chunking = defaultChunking;
+
+    if (updates.size) {
+      data.chunking.size = parseInt(updates.size, 10);
+    }
+    if (updates.chunking.overlap) {
+      data.chunking.overlap = parseInt(updates.overlap, 10);
+    }
+
+    if (updates.trim === "on") {
+      data.chunking.trim = true;
+    }
+    if (updates.sep === "on") {
+      data.chunking.sep = true;
+    }
+  }
+
+  console.log(data);
+
   await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
     method: "PUT",
-    body: JSON.stringify(updates),
+    body: JSON.stringify(data),
     headers: {
       "Content-Type": "application/json",
     },

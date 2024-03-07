@@ -63,7 +63,20 @@ type EmbeddingsUpdate struct {
 	Text       string         `json:"text"`
 	Label      string         `json:"label"`
 	Projection Projection     `json:"projection"`
+	Chunking   *Chunking      `json:"chunking,omitempty"`
 	Metadata   map[string]any `json:"metadata,omitempty"`
+}
+
+// Chunking splits input text into chunks if enabled.
+type Chunking struct {
+	// Size of each chunk.
+	Size int `json:"size"`
+	// Overlap between chunks.
+	Overlap int `json:"overlap"`
+	// Trim empty space chars.
+	Trim bool `json:"trim"`
+	// Sep keeps separator in chunks.
+	Sep bool `json:"sep"`
 }
 
 // ProjectionsUpdate is used to recompute embedding projections.
@@ -85,7 +98,7 @@ type ProvidersService interface {
 	// GetProviderProjections returns embeddings projections for the provider with the given uid.
 	GetProviderProjections(ctx context.Context, uid string, filter ProviderFilter) (map[Dim][]Embedding, Page, error)
 	// UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
-	UpdateProviderEmbeddings(ctx context.Context, uid string, update Embedding, projection Projection) (*Embedding, error)
+	UpdateProviderEmbeddings(ctx context.Context, uid string, update []Embedding, projection Projection) ([]Embedding, error)
 	// DropProviderEmbeddings drops all provider embeddings from the store.
 	DropProviderEmbeddings(ctx context.Context, uid string) error
 	// ComputeProviderProjections drops existing projections and recomputes anew.

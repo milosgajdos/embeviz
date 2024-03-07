@@ -356,21 +356,22 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 }
 
 // UpdateProviderEmbeddings generates embeddings for the provider with the given uid.
-func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embed v1.Embedding, proj v1.Projection) (*v1.Embedding, error) {
+func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid string, embeds []v1.Embedding, proj v1.Projection) ([]v1.Embedding, error) {
 	// fetch all points so we can compute projections
 	ctx = metadata.NewOutgoingContext(ctx, p.db.md)
 
-	// create a new embedding point
-	data := make([]float32, 0, len(embed.Values))
-	for _, val := range embed.Values {
-		data = append(data, float32(val))
-	}
-	pointUID := embed.UID
-	if pointUID == "" {
-		pointUID = uuid.NewString()
-	}
-	upsertPoints := []*pb.PointStruct{
-		{
+	upsertPoints := make([]*pb.PointStruct, 0, len(embeds))
+	for _, e := range embeds {
+		// create a new embedding point
+		data := make([]float32, 0, len(e.Values))
+		for _, val := range e.Values {
+			data = append(data, float32(val))
+		}
+		pointUID := e.UID
+		if pointUID == "" {
+			pointUID = uuid.NewString()
+		}
+		upsertPoints = append(upsertPoints, &pb.PointStruct{
 			Id: &pb.PointId{
 				PointIdOptions: &pb.PointId_Uuid{
 					Uuid: pointUID,
@@ -389,8 +390,9 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 			},
 			// TODO: metadata
 			Payload: map[string]*pb.Value{},
-		},
+		})
 	}
+
 	// TODO: can we avoid upserting duplicate points ?
 	// duplicate meaning similar vectors or the same vectors i.e.
 	// that have the same data not necessarily the same UUID
@@ -492,7 +494,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		return nil, v1.Errorf(v1.EINTERNAL, "UpdateVectors error %v", err)
 	}
 
-	return &embed, nil
+	return embeds, nil
 }
 
 // DropProviderEmbeddings drops all provider embeddings from the store

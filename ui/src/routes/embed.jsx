@@ -22,6 +22,8 @@ export async function action({ request, params }) {
   let intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
 
+  console.log(updates);
+
   switch (intent) {
     case "embed":
       await embedData(params.uid, updates);
@@ -67,20 +69,21 @@ export default function Embed() {
         <div>
           <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
           {provider.description && <p>{provider.description}</p>}
+          <br />
           <div id="charts">
             <EChart
               name="3D projections"
               dim="3D"
               isLoading={navigation.state === "loading"}
               embeddings={embeddings["3D"]}
-              styling={{ height: 300, width: 300 }}
+              styling={{ height: 350, width: 350 }}
             />
             <EChart
               name="2D projections"
               dim="2D"
               isLoading={navigation.state === "loading"}
               embeddings={embeddings["2D"]}
-              styling={{ height: 300, width: 300 }}
+              styling={{ height: 350, width: 350 }}
             />
           </div>
         </div>
@@ -93,6 +96,9 @@ export default function Embed() {
 export function UpdateForm({ onDataDeleted }) {
   let params = useParams();
   const [projection, setProjection] = useState("pca");
+  const [chunking, setChunking] = useState(false);
+  const [size, setSize] = useState("2");
+  const [overlap, setOverlap] = useState("0");
 
   async function handleDeleteData() {
     const isConfirmed = window.confirm(
@@ -166,6 +172,55 @@ export function UpdateForm({ onDataDeleted }) {
           <button type="button" id="delete-btn" onClick={handleClearFields}>
             Clear
           </button>
+        </div>
+        <div id="chunk-options">
+          <fieldset>
+            <legend>Chunking</legend>
+            <input
+              type="checkbox"
+              id="chunking"
+              name="chunking"
+              checked={chunking}
+              onChange={() => setChunking(!chunking)}
+            />
+            <label htmlFor="chunking"> Enable</label>
+            <fieldset disabled={!chunking}>
+              <legend>Options</legend>
+              <div>
+                <div>
+                  <label htmlFor="size">Size </label>
+                  <input
+                    type="number"
+                    id="size"
+                    name="size"
+                    min="2"
+                    value={size}
+                    onChange={(e) => setSize(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="overlap">Overlap </label>
+                  <input
+                    type="number"
+                    id="overlap"
+                    name="overlap"
+                    min="0"
+                    value={overlap}
+                    onChange={(e) => setOverlap(e.target.value)}
+                  />
+                </div>
+                <br />
+                <div>
+                  <input type="checkbox" id="trim" name="trim" />
+                  <label htmlFor="trim"> Trim</label>
+                </div>
+                <div>
+                  <input type="checkbox" id="sep" name="sep" />
+                  <label htmlFor="sep"> Separator</label>
+                </div>
+              </div>
+            </fieldset>
+          </fieldset>
         </div>
       </Form>
       <div id="embed-buttons">

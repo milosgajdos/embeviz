@@ -344,3 +344,7 @@ i {
     gap: 2rem;
     width: 100%;
 }
+
+input[type="radio"] {
+    box-shadow: none;
+}
