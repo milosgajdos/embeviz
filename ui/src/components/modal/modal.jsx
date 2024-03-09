@@ -31,13 +31,20 @@ export default function Modal({ isOpen, onClose, children }) {
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
-      console.log("closing by Esc");
       handleCloseModal();
     }
   };
 
+  // TODO: this does not seem to be working
+  // I've also tried !(e.target.contains(modalRef.current)'
+  // it seems e.target keeps getting captured by dialog instead of modal-container
   const handleOutsideClick = (e) => {
-    if (modalRef.current && isModalOpen) {
+    console.log(e.target.className);
+    if (
+      modalRef.current &&
+      isModalOpen &&
+      e.target.className === "modal-container"
+    ) {
       console.log("Clicked outside of the modal, closing!");
       handleCloseModal();
     }
@@ -45,7 +52,7 @@ export default function Modal({ isOpen, onClose, children }) {
 
   return (
     <div className="modal-container" onClick={handleOutsideClick}>
-      <dialog ref={modalRef} onKeyDown={handleKeyDown} className="modal">
+      <dialog className="modal" ref={modalRef} onKeyDown={handleKeyDown}>
         {children}
       </dialog>
     </div>

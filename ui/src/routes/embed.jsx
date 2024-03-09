@@ -122,12 +122,10 @@ export function UpdateForm({ onDataDeleted }) {
   }
 
   function openModal() {
-    console.log("opening modal");
     setOpenModal(true);
   }
 
   function closeModal() {
-    console.log("modal closed");
     setOpenModal(false);
   }
 
@@ -241,13 +239,26 @@ export function UpdateForm({ onDataDeleted }) {
         </div>
       </Form>
       <Modal isOpen={isOpenModal} onClose={closeModal}>
-        <p> Are you sure you want to drop the data? </p>
-        <button value="cancel" onClick={closeModal}>
-          Cancel
-        </button>
-        <button value="cancel" id="delete-btn" onClick={handleDeleteData}>
-          OK
-        </button>
+        <div className="modal-content">
+          <p> Are you sure you want to drop the data? </p>
+          <div className="modal-buttons">
+            <button
+              value="cancel"
+              className="modal-cancel-btn"
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+            <button
+              value="ok"
+              id="delete-btn"
+              className="modal-ok-btn"
+              onClick={handleDeleteData}
+            >
+              OK
+            </button>
+          </div>
+        </div>
       </Modal>
     </>
   );
