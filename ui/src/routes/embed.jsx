@@ -23,8 +23,6 @@ export async function action({ request, params }) {
   let intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
 
-  console.log(updates);
-
   switch (intent) {
     case "embed":
       await embedData(params.uid, updates);
@@ -104,9 +102,9 @@ export function UpdateForm({ onDataDeleted }) {
 
   async function handleDeleteData() {
     try {
-      console.log("daleting data");
       await deleteData(params.uid);
       onDataDeleted();
+      setOpenModal(false);
     } catch (error) {
       console.error("Error deleting data:", error);
     }

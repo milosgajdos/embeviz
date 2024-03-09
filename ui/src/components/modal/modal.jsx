@@ -45,7 +45,6 @@ export default function Modal({ isOpen, onClose, children }) {
       isModalOpen &&
       e.target.className === "modal-container"
     ) {
-      console.log("Clicked outside of the modal, closing!");
       handleCloseModal();
     }
   };
