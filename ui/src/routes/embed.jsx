@@ -16,13 +16,12 @@ import {
   deleteData,
 } from "../lib/embeddings";
 import EChart from "../components/echart/echart";
+import Modal from "../components/modal/modal";
 
 export async function action({ request, params }) {
   const formData = await request.formData();
   let intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
-
-  console.log(updates);
 
   switch (intent) {
     case "embed":
@@ -99,18 +98,15 @@ export function UpdateForm({ onDataDeleted }) {
   const [chunking, setChunking] = useState(false);
   const [size, setSize] = useState("2");
   const [overlap, setOverlap] = useState("0");
+  const [isOpenModal, setOpenModal] = useState(false);
 
   async function handleDeleteData() {
-    const isConfirmed = window.confirm(
-      "Are you sure you want to delete the data?",
-    );
-    if (isConfirmed) {
-      try {
-        await deleteData(params.uid);
-        onDataDeleted();
-      } catch (error) {
-        console.error("Error deleting data:", error);
-      }
+    try {
+      await deleteData(params.uid);
+      onDataDeleted();
+      setOpenModal(false);
+    } catch (error) {
+      console.error("Error deleting data:", error);
     }
   }
 
@@ -121,6 +117,14 @@ export function UpdateForm({ onDataDeleted }) {
   function handleClearFields() {
     document.getElementById("label").value = "";
     document.getElementById("text").value = "";
+  }
+
+  function openModal() {
+    setOpenModal(true);
+  }
+
+  function closeModal() {
+    setOpenModal(false);
   }
 
   return (
@@ -167,10 +171,19 @@ export function UpdateForm({ onDataDeleted }) {
             Embed
           </button>
           <button type="submit" id="update-btn" name="intent" value="compute">
-            Compute
+            Recompute
           </button>
           <button type="button" id="delete-btn" onClick={handleClearFields}>
-            Clear
+            Clear text
+          </button>
+          <button
+            type="button"
+            id="delete-btn"
+            name="modal"
+            value="modal"
+            onClick={openModal}
+          >
+            Drop
           </button>
         </div>
         <div id="chunk-options">
@@ -223,13 +236,28 @@ export function UpdateForm({ onDataDeleted }) {
           </fieldset>
         </div>
       </Form>
-      <div id="embed-buttons">
-        <Form method="delete">
-          <button type="button" id="delete-btn" onClick={handleDeleteData}>
-            Drop Data
-          </button>
-        </Form>
-      </div>
+      <Modal isOpen={isOpenModal} onClose={closeModal}>
+        <div className="modal-content">
+          <p> Are you sure you want to drop the data? </p>
+          <div className="modal-buttons">
+            <button
+              value="cancel"
+              className="modal-cancel-btn"
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+            <button
+              value="ok"
+              id="delete-btn"
+              className="modal-ok-btn"
+              onClick={handleDeleteData}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
