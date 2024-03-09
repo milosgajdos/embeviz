@@ -31,14 +31,12 @@ export default function Modal({ isOpen, onClose, children }) {
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") {
-      console.log("closing by Esc");
       handleCloseModal();
     }
   };
 
   const handleOutsideClick = (e) => {
     if (modalRef.current && isModalOpen) {
-      console.log("Clicked outside of the modal, closing!");
       handleCloseModal();
     }
   };

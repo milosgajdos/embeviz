@@ -23,8 +23,6 @@ export async function action({ request, params }) {
   let intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
 
-  console.log(updates);
-
   switch (intent) {
     case "embed":
       await embedData(params.uid, updates);
@@ -104,7 +102,6 @@ export function UpdateForm({ onDataDeleted }) {
 
   async function handleDeleteData() {
     try {
-      console.log("daleting data");
       await deleteData(params.uid);
       onDataDeleted();
     } catch (error) {
@@ -122,12 +119,10 @@ export function UpdateForm({ onDataDeleted }) {
   }
 
   function openModal() {
-    console.log("opening modal");
     setOpenModal(true);
   }
 
   function closeModal() {
-    console.log("modal closed");
     setOpenModal(false);
   }
 
