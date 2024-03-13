@@ -39,7 +39,6 @@ export default function Modal({ isOpen, onClose, children }) {
   // I've also tried !(e.target.contains(modalRef.current)'
   // it seems e.target keeps getting captured by dialog instead of modal-container
   const handleOutsideClick = (e) => {
-    console.log(e.target.className);
     if (
       modalRef.current &&
       isModalOpen &&

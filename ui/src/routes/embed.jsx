@@ -7,7 +7,7 @@ import {
   useRevalidator,
   json,
 } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   getProvider,
   getProviderProjections,
@@ -54,12 +54,17 @@ export default function Embed() {
   const { provider, embeddings } = useLoaderData();
   const navigation = useNavigation();
   const revalidator = useRevalidator();
+  const [isFetching, setFetching] = useState(false);
 
   // NOTE: we need to "revalidate" the parent component
   // if we delete the data so the charts are rerendered.
   // I tried using state but that somehow never triggers render.
   function handleDataDeleted() {
     revalidator.revalidate();
+  }
+
+  function handleFetching(fetching) {
+    setFetching(fetching);
   }
 
   return (
@@ -73,32 +78,42 @@ export default function Embed() {
             <EChart
               name="3D projections"
               dim="3D"
-              isLoading={navigation.state === "loading"}
+              isLoading={navigation.state === "loading" || isFetching}
               embeddings={embeddings["3D"]}
               styling={{ height: 350, width: 350 }}
             />
             <EChart
               name="2D projections"
               dim="2D"
-              isLoading={navigation.state === "loading"}
+              isLoading={navigation.state === "loading" || isFetching}
               embeddings={embeddings["2D"]}
               styling={{ height: 350, width: 350 }}
             />
           </div>
         </div>
       </div>
-      <UpdateForm onDataDeleted={handleDataDeleted} />
+      <UpdateForm
+        onDataDeleted={handleDataDeleted}
+        onFetching={handleFetching}
+      />
     </>
   );
 }
 
-export function UpdateForm({ onDataDeleted }) {
+export function UpdateForm({ onDataDeleted, onFetching }) {
   let params = useParams();
+  const navigation = useNavigation();
   const [projection, setProjection] = useState("pca");
   const [chunking, setChunking] = useState(false);
   const [size, setSize] = useState("2");
   const [overlap, setOverlap] = useState("0");
   const [isOpenModal, setOpenModal] = useState(false);
+
+  useEffect(() => {
+    onFetching(
+      navigation.state === "submitting" || navigation.state === "loading",
+    );
+  }, [navigation.state]);
 
   async function handleDeleteData() {
     try {
@@ -174,7 +189,7 @@ export function UpdateForm({ onDataDeleted }) {
             Recompute
           </button>
           <button type="button" id="delete-btn" onClick={handleClearFields}>
-            Clear text
+            Clear
           </button>
           <button
             type="button"
