@@ -4,7 +4,6 @@ A simple webapp that helps you visualize embeddings.
 
 > [!WARNING]
 > THIS PROJECT IS WILDLY EXPERIMENTAL AT THE MOMENT! USE AT YOUR OWN RISK!
-> IF YOU LIKE CLEAN AND DRY CODE THIS ISN'T GONNA BE YOUR JAM!
 
 [![Build Status](https://github.com/milosgajdos/embeviz/workflows/CI/badge.svg)](https://github.com/milosgajdos/embeviz/actions?query=workflow%3ACI)
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/milosgajdos/embeviz)
@@ -14,60 +13,61 @@ The app consists of two components:
 * A JSON API (written in Go, using [gofiber framework](https://docs.gofiber.io/))
 * An SPA (written in JavaScript using [ReactJS](https://react.dev/) framework with [React Router](https://reactrouter.com/en/main))
 
-The SPA is accessible on `/ui` URL path when you run the app.
+The SPA is available on the `/ui` URL path when running the app.
+The app also exposes the API docs on `/api/v1/docs` URL.
 
 > [!IMPORTANT]
-> Before you try accessing the SPA you must build it first. See the [README](./ui/README.md) for more details.
+> Before you attempt to access the SPA you must build it first!
+> See the [README](./ui/README.md) for more details.
 
 <p align="center">
-  <img alt="Embeviz Home" src="./ui/public/home.png" width="45%">
+  <img alt="Home" src="./ui/public/home.png" width="45%">
 &nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="Embeviz Provider" src="./ui/public/provider.png" width="45%">
+  <img alt="Provider" src="./ui/public/provider.png" width="45%">
 </p>
 
-The API provides a swagger API endpoint on `/api/v1/docs` which serves the API documentation powering the SPA.
+The [swagger](https://swagger.io/) docs for the API are availble on `/api/v1/docs`.
 
 <p align="center">
-  <img alt="Swagger endpoints" src="./ui/public/swagger_endpoints.png" width="45%">
+  <img alt="Endpoints" src="./ui/public/swagger_endpoints.png" width="45%">
 &nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="Swagger models" src="./ui/public/swagger_models.png" width="45%">
+  <img alt="Models" src="./ui/public/swagger_models.png" width="45%">
 </p>
 
-The app leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like [OpenAI](https://openai.com/), etc.
+The app leverages the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module for fetching embeddings from various API providers like [OpenAI](https://openai.com/),
+and chunking the input data if requested.
 
-As a result of this you MUST supply specific environment variables when you run the app. The environment variables are used to initialize various API clients for fetching the embeddings. See the [`README`](https://github.com/milosgajdos/go-embeddings) of the `go-embeddings` module for more details.
+As a result of this you **MUST** supply API keys to the embeddings providers via environment variables when you run the app.
+See the [`README`](https://github.com/milosgajdos/go-embeddings) of the `go-embeddings` module for more details.
 
 > [!WARNING]
-> By default the API stores the embeddings in an in-memory store (it's a major Go maps hack!)
+> By default the API stores the embeddings in an in-memory store (which is a major Go maps hack!).
 > The only vector store currently supported is [qdrant](https://qdrant.tech/). See the [docs](./api/v1/qdrant).
 
 # Build
+
+Build the UI:
+```shell
+cd ui && npm install && npm run build
+```
+
+> [!IMPORTANT]
+> You must build the UI app first as the Go binary [embeds](https://pkg.go.dev/embed) it as a static asset.
 
 Build the Go binary:
 ```shell
 go get ./... && go build
 ```
-
-SPA:
-```shell
-cd ui && npm install && npm run build
-```
-
 ## Nix
 
-The project provides a simple `nix` flake tha leverages [gomod2nix](https://github.com/nix-community/gomod2nix) for consistent Go environments and builds.
+The project also provides a simple `nix` flake that leverages [gomod2nix](https://github.com/nix-community/gomod2nix) for consistent Go environments and builds.
 
 To get started just run
 ```shell
 nix develop
 ```
 
-And you'll be dropped into development shell.
-
-In addition, each command is exposed as a `nix` app so you can run them as follows:
-```shell
-nix run ".#vertexai" -- -help
-```
+And you'll be dropped into a development shell.
 
 > [!NOTE]
 > `gomod2nix` vendors dependencies into the local `nix` store so every time you add a new dependency you **must** run `gomod2nix generate` which updates the `gomod2nix.toml` file based on your `go.mod`/`go.sum`.
@@ -75,7 +75,7 @@ nix run ".#vertexai" -- -help
 # Run
 
 > [!IMPORTANT]
-> Before you run the app you need to make sure you have set some environment variables required by specific AI embeddings API providers. See the list below
+> Before you run the app you need to make sure you have set some environment variables required by specific AI embeddings providers. See the list below for the currently supported providers:
 
 The project relies on the [go-embeddings](https://github.com/milosgajdos/go-embeddings) Go module so we only support specific AI embeddings API providers:
 * [OpenAI](https://openai.com/): `OPENAI_API_KEY`
@@ -84,21 +84,15 @@ The project relies on the [go-embeddings](https://github.com/milosgajdos/go-embe
 
 > [!NOTE]
 > If none of the above environment vars has been set, no AI embeddings provider is loaded and you won't be able to interact with the app.
-> The project doesn't allow adding new embeddings providers at the moment.
+> The project doesn't allow adding new embeddings providers from the UI app at the moment.
 
-Once you've built the Go binary and bundled the webapp you can simply run the following command:
+Once you've bundled the webapp and built the Go binary you can run the following command:
+```shell
+OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" ./embeviz
+```
+Alternatively you can also run the following command which builds the app on the fly:
 ```shell
 OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
-```
-
-Alternatively you can also run the following command:
-```shell
-OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
-```
-
-Or build the binary and run it like so:
-```shell
-go build && OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" ./embeviz
 ```
 
 You should now be able to access the SPA on [http://localhost:5050/ui](http://localhost:5050/ui).
@@ -109,7 +103,3 @@ The API docs should be available on [http://localhost:5050/api/v1/docs](http://l
 
 * [ ] Clean up the code: both Go and React
 * [x] Embed the SPA into the Go binary
-
-# Contributing
-
-YES PLEASE!
