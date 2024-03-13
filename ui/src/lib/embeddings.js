@@ -58,8 +58,6 @@ export async function embedData(uid, updates) {
     }
   }
 
-  console.log(data);
-
   await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
     method: "PUT",
     body: JSON.stringify(data),
