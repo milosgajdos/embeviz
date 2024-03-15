@@ -94,7 +94,8 @@ export function makeSeries(name, dim, data) {
   };
 }
 
-export function getChartOption(name, dim, embeddings) {
+export function getChartOption(dim, embeddings) {
+  const name = `${dim} projection`;
   return {
     ...defaultChartOptions[dim],
     series: makeSeries(name, dim, embeddings),
