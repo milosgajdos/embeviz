@@ -10,6 +10,10 @@ const defaultChunking = {
 
 export async function getProviders(query) {
   const resp = await fetch("http://localhost:5050/api/v1/providers");
+  if (!resp.ok) {
+    throw new Error(`HTTP error! Status: ${resp.status}`);
+  }
+
   const respData = await resp.json();
   let providers = respData.providers;
   if (!providers) return [];
@@ -21,6 +25,10 @@ export async function getProviders(query) {
 
 export async function getProvider(uid) {
   const resp = await fetch("http://localhost:5050/api/v1/providers/" + uid);
+  if (!resp.ok) {
+    throw new Error(`HTTP error! Status: ${resp.status}`);
+  }
+
   const provider = await resp.json();
   return provider ?? null;
 }
@@ -58,23 +66,37 @@ export async function embedData(uid, updates) {
     }
   }
 
-  await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
-    method: "PUT",
-    body: JSON.stringify(data),
-    headers: {
-      "Content-Type": "application/json",
+  const resp = await fetch(
+    "http://localhost:5050/api/v1/providers/" + uid + "/embeddings",
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
+
+  if (!resp.ok) {
+    throw new Error(`HTTP error! Status: ${resp.status}`);
+  }
 }
 
 export async function deleteData(uid) {
-  await fetch("http://localhost:5050/api/v1/providers/" + uid + "/embeddings", {
-    method: "DELETE",
-  });
+  const resp = await fetch(
+    "http://localhost:5050/api/v1/providers/" + uid + "/embeddings",
+    {
+      method: "DELETE",
+    },
+  );
+
+  if (!resp.ok) {
+    throw new Error(`HTTP error! Status: ${resp.status}`);
+  }
 }
 
 export async function computeData(uid, updates) {
-  await fetch(
+  const resp = await fetch(
     "http://localhost:5050/api/v1/providers/" + uid + "/projections",
     {
       method: "PATCH",
@@ -84,4 +106,8 @@ export async function computeData(uid, updates) {
       },
     },
   );
+
+  if (!resp.ok) {
+    throw new Error(`HTTP error! Status: ${resp.status}`);
+  }
 }

@@ -17,15 +17,33 @@ import EmbedForm from "../components/embed-form/embed-form";
 
 export async function action({ request, params }) {
   const formData = await request.formData();
-  let intent = formData.get("intent");
+  const intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
 
+  // TODO: handle errors better:
+  // Status message should inform the user WHY the failure happened
+  // so the user goes back and fixes the problem if possible
   switch (intent) {
     case "embed":
-      await embedData(params.uid, updates);
+      try {
+        await embedData(params.uid, updates);
+      } catch (error) {
+        console.log(error);
+        throw new Response("", {
+          status: error.Status,
+          statusText: "Invalid input",
+        });
+      }
       break;
     case "compute":
-      await computeData(params.uid, updates);
+      try {
+        await computeData(params.uid, updates);
+      } catch (error) {
+        throw new Response("", {
+          status: error.Status,
+          statusText: "Projection failed",
+        });
+      }
       break;
     default:
       throw json({ message: "Invalid intent" }, { status: 400 });
@@ -52,16 +70,6 @@ export default function Embed() {
   const revalidator = useRevalidator();
   const [isFetching, setFetching] = useState(false);
 
-  // NOTE: we need to "revalidate" the parent component
-  // if we drop the data so the charts are rerendered.
-  function onDrop() {
-    revalidator.revalidate();
-  }
-
-  function onFetching(fetching) {
-    setFetching(fetching);
-  }
-
   return (
     <>
       <div id="embed">
@@ -83,7 +91,12 @@ export default function Embed() {
           </div>
         </div>
       </div>
-      <EmbedForm onDrop={onDrop} onFetching={onFetching} />
+      <EmbedForm
+        // NOTE: we need to "revalidate" the parent component
+        // if we drop the data so the charts are rerendered.
+        onDrop={() => revalidator.revalidate()}
+        onFetching={(fetching) => setFetching(fetching)}
+      />
     </>
   );
 }
