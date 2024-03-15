@@ -28,7 +28,6 @@ export async function getProvider(uid) {
   if (!resp.ok) {
     throw new Error(`HTTP error! Status: ${resp.status}`);
   }
-
   const provider = await resp.json();
   return provider ?? null;
 }
@@ -46,6 +45,9 @@ export async function embedData(uid, updates) {
     text: updates.text,
     label: updates.label,
     projection: updates.projection,
+    metadata: {
+      color: updates.color,
+    },
   };
 
   if (updates.chunking === "on") {

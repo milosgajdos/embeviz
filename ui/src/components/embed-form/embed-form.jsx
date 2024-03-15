@@ -15,6 +15,7 @@ export default function EmbedForm({ onDrop, onFetching }) {
   const [text, setText] = useState("");
   // Projection options
   const [projection, setProjection] = useState("pca");
+  const [color, setColor] = useState("#0000FF");
   // Chunking options
   const [chunking, setChunking] = useState(false);
   const [size, setSize] = useState("2");
@@ -55,6 +56,8 @@ export default function EmbedForm({ onDrop, onFetching }) {
             setText("");
           }}
           onProjetionDrop={() => setOpenModal(true)}
+          color={color}
+          onColorChange={(e) => setColor(e.target.value)}
         />
         <Chunking
           chunking={chunking}

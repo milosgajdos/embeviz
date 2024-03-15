@@ -3,6 +3,8 @@ export default function Projection({
   onProjectionChange,
   onProjectionClearInput,
   onProjetionDrop,
+  color,
+  onColorChange,
 }) {
   return (
     <div id="embed-projection">
@@ -30,6 +32,16 @@ export default function Projection({
           />
           <label htmlFor="tsne"> t-SNE</label>
         </div>
+        <div>
+          <input
+            type="color"
+            id="color"
+            name="color"
+            value={color}
+            onChange={onColorChange}
+          />
+          <label htmlFor="color"> Color</label>
+        </div>
       </fieldset>
       <button type="submit" className="embed-btn" name="intent" value="embed">
         Embed
@@ -40,7 +52,7 @@ export default function Projection({
         name="intent"
         value="compute"
       >
-        Recompute
+        Compute
       </button>
       <button
         type="button"
