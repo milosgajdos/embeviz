@@ -53,12 +53,12 @@ export default function Embed() {
   const [isFetching, setFetching] = useState(false);
 
   // NOTE: we need to "revalidate" the parent component
-  // if we delete the data so the charts are rerendered.
-  function handleDeletion() {
+  // if we drop the data so the charts are rerendered.
+  function onDrop() {
     revalidator.revalidate();
   }
 
-  function handleFetching(fetching) {
+  function onFetching(fetching) {
     setFetching(fetching);
   }
 
@@ -83,7 +83,7 @@ export default function Embed() {
           </div>
         </div>
       </div>
-      <EmbedForm onDeletion={handleDeletion} onFetching={handleFetching} />
+      <EmbedForm onDrop={onDrop} onFetching={onFetching} />
     </>
   );
 }

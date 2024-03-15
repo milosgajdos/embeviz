@@ -1,17 +1,25 @@
 import { Form, useNavigation, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { deleteData } from "../../lib/embeddings";
+import Input from "./input";
+import Projection from "./projection";
+import Chunking from "./chunking";
 import Modal from "../modal/modal";
 
-export default function EmbedForm({ onDeletion, onFetching }) {
+export default function EmbedForm({ onDrop, onFetching }) {
   let params = useParams();
   const navigation = useNavigation();
+
+  // Input fields
+  const [label, setLabel] = useState("");
+  const [text, setText] = useState("");
+  // Projection options
   const [projection, setProjection] = useState("pca");
+  // Chunking options
   const [chunking, setChunking] = useState(false);
   const [size, setSize] = useState("2");
   const [overlap, setOverlap] = useState("0");
-  const [label, setLabel] = useState("");
-  const [text, setText] = useState("");
+  // Drop data modal
   const [isOpenModal, setOpenModal] = useState(false);
 
   useEffect(() => {
@@ -20,150 +28,42 @@ export default function EmbedForm({ onDeletion, onFetching }) {
     );
   }, [navigation.state]);
 
-  async function handleDeletion() {
+  async function handleDrop() {
     try {
       await deleteData(params.uid);
-      onDeletion();
+      onDrop();
       setOpenModal(false);
     } catch (error) {
       console.error("Error deleting data:", error);
     }
   }
 
-  function handleProjection(e) {
-    setProjection(e.target.value);
-  }
-
-  function handleClearFields() {
-    setLabel("");
-    setText("");
-  }
-
   return (
     <>
       <Form method="post" id="embed-form">
-        <div id="embed-input">
-          <input
-            id="label"
-            name="label"
-            placeholder="Label (Optional)"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-          />
-          <textarea
-            id="text"
-            name="text"
-            placeholder="Text"
-            rows="10"
-            cols="80"
-            wrap="soft"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          ></textarea>
-        </div>
-        <div id="embed-projection">
-          <fieldset>
-            <legend>Projection</legend>
-            <div>
-              <input
-                type="radio"
-                id="pca"
-                name="projection"
-                value="pca"
-                checked={projection === "pca"}
-                onChange={handleProjection}
-              />
-              <label htmlFor="pca"> pca</label>
-            </div>
-            <div>
-              <input
-                type="radio"
-                id="tsne"
-                name="projection"
-                value="tsne"
-                checked={projection === "tsne"}
-                onChange={handleProjection}
-              />
-              <label htmlFor="tsne"> t-SNE</label>
-            </div>
-          </fieldset>
-          <button type="submit" name="intent" value="embed">
-            Embed
-          </button>
-          <button
-            type="submit"
-            className="update-btn"
-            name="intent"
-            value="compute"
-          >
-            Recompute
-          </button>
-          <button
-            type="button"
-            className="delete-btn"
-            onClick={handleClearFields}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            className="delete-btn"
-            name="modal"
-            value="modal"
-            onClick={() => setOpenModal(true)}
-          >
-            Drop
-          </button>
-        </div>
-        <div id="embed-chunking">
-          <fieldset>
-            <legend>Chunking</legend>
-            <input
-              type="checkbox"
-              id="chunking"
-              name="chunking"
-              checked={chunking}
-              onChange={() => setChunking(!chunking)}
-            />
-            <label htmlFor="chunking"> Enable</label>
-            <fieldset disabled={!chunking}>
-              <legend>Options</legend>
-              <div>
-                <div>
-                  <label htmlFor="size">Size </label>
-                  <input
-                    type="number"
-                    id="size"
-                    name="size"
-                    min="2"
-                    value={size}
-                    onChange={(e) => setSize(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="overlap">Overlap </label>
-                  <input
-                    type="number"
-                    id="overlap"
-                    name="overlap"
-                    min="0"
-                    value={overlap}
-                    onChange={(e) => setOverlap(e.target.value)}
-                  />
-                </div>
-                <br />
-                <div>
-                  <input type="checkbox" id="trim" name="trim" />
-                  <label htmlFor="trim"> Trim</label>
-                </div>
-                <div>
-                  <input type="checkbox" id="sep" name="sep" />
-                  <label htmlFor="sep"> Separator</label>
-                </div>
-              </div>
-            </fieldset>
-          </fieldset>
-        </div>
+        <Input
+          label={label}
+          onLabelChange={(e) => setLabel(e.target.value)}
+          text={text}
+          onTextChange={(e) => setText(e.target.value)}
+        />
+        <Projection
+          projection={projection}
+          onProjectionChange={(e) => setProjection(e.target.value)}
+          onProjectionClearInput={() => {
+            setLabel("");
+            setText("");
+          }}
+          onProjetionDrop={() => setOpenModal(true)}
+        />
+        <Chunking
+          chunking={chunking}
+          onChunkingChange={() => setChunking(!chunking)}
+          size={size}
+          onSizeChange={(e) => setSize(e.target.value)}
+          overlap={overlap}
+          onOverlapChange={(e) => setOverlap(e.target.value)}
+        />
       </Form>
       <Modal isOpen={isOpenModal} onClose={() => setOpenModal(false)}>
         <div className="modal-content">
@@ -179,7 +79,7 @@ export default function EmbedForm({ onDeletion, onFetching }) {
             <button
               value="ok"
               className="modal-ok-btn delete-btn"
-              onClick={handleDeletion}
+              onClick={handleDrop}
             >
               OK
             </button>
