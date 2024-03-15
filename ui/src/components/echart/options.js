@@ -36,6 +36,9 @@ const defaultChartOptions = {
     toolbox: defaultToolbox,
     tooltip: defaultToolTip,
     series: [],
+    title: {
+      text: "3D Projections",
+    },
   },
   "2D": {
     animation: true,
@@ -45,6 +48,9 @@ const defaultChartOptions = {
     toolbox: defaultToolbox,
     tooltip: defaultToolTip,
     series: [],
+    title: {
+      text: "2D Projections",
+    },
   },
 };
 
@@ -72,29 +78,38 @@ const defaultSeriesOptions = {
 };
 
 export function makeSeries(name, dim, data) {
-  // extracting the value of label and  setting it as a name
   // TODO: clean this up, it's very fugly
   data = data.map((obj) => {
     const { metadata, ...rest } = obj;
     const name = metadata?.label;
+    const color = metadata?.color;
+
     if (name) {
-      return {
-        ...rest,
-        name,
+      obj = {
+        ...obj,
+        name: name,
       };
-    } else {
-      return obj;
     }
+
+    if (color) {
+      obj = {
+        ...obj,
+        itemStyle: {
+          color: color,
+        },
+      };
+    }
+
+    return obj;
   });
 
   return {
     ...defaultSeriesOptions[dim],
-    name: name,
     data: data,
   };
 }
 
-export function getChartOption(name, dim, embeddings) {
+export function getChartOption(dim, embeddings) {
   return {
     ...defaultChartOptions[dim],
     series: makeSeries(name, dim, embeddings),

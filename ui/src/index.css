@@ -42,6 +42,9 @@ button {
     line-height: 1.5;
     margin: 0;
 }
+textarea {
+    height: 100%;
+}
 button {
     color: #3992ff;
     font-weight: 500;
@@ -63,12 +66,12 @@ button:hover {
 }
 
 /* Hover styles for the delete button */
-button#delete-btn:hover {
+button.delete-btn:hover {
     background-color: red;
     color: white;
 }
 
-button#update-btn:hover {
+button.update-btn:hover {
     background-color: green;
     color: white;
 }
@@ -76,6 +79,11 @@ button#update-btn:hover {
 button:active {
     box-shadow: 0 0px 1px hsla(0, 0%, 0%, 0.4);
     transform: translateY(1px);
+}
+
+.echart-container {
+    height: 350px;
+    width: 350px;
 }
 
 .sr-only {
@@ -279,13 +287,13 @@ i {
     padding-bottom: 20px;
 }
 
-#embed-options {
+#embed-input {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-#embed-form-text-options {
+#embed-projection {
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -349,6 +357,25 @@ input[type="radio"] {
     box-shadow: none;
 }
 
+/* Style embed projection options */
+#embed-projection fieldset {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+#embed-projection fieldset > div {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+#embed-projection fieldset input[type="radio"],
+#embed-projection fieldset input[type="color"] {
+    width: 2rem;
+}
+#embed-projection fieldset input[type="color"] {
+    padding: 2px;
+}
+
 /* Style the modal container */
 .modal {
     border: none;
@@ -382,4 +409,23 @@ input[type="radio"] {
 .modal-ok-btn {
     cursor: pointer;
     transition: background-color 0.3s ease;
+}
+
+.chunking-splits {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chunking-size {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+input[type="number"] {
+    width: 4rem; /* Adjust width as needed */
+    padding: 0.5rem; /* Add padding for better visual alignment */
+    font-size: 1rem; /* Ensure consistent font size */
 }

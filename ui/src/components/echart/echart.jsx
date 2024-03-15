@@ -4,14 +4,14 @@ import { getChartOption } from "./options";
 
 export default function EChart({ name, dim, isLoading, embeddings, styling }) {
   // TODO: should this be a hook?
-  let option = getChartOption(name, dim, embeddings);
+  let option = getChartOption(dim, embeddings);
 
   return (
     <ReactECharts
       notMerge
       showLoading={isLoading}
       option={option}
-      style={styling} // TODO: fix this styling mess
+      className="echart-container"
     />
   );
 }
