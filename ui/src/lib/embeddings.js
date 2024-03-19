@@ -1,6 +1,8 @@
 import { matchSorter } from "match-sorter";
 import sortBy from "sort-by";
 
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5050/api/v1";
+
 const defaultChunking = {
   size: 2,
   overlap: 0,
@@ -9,35 +11,57 @@ const defaultChunking = {
 };
 
 export async function getProviders(query) {
-  const resp = await fetch("http://localhost:5050/api/v1/providers");
-  if (!resp.ok) {
-    throw new Error(`HTTP error! Status: ${resp.status}`);
-  }
+  try {
+    const resp = await fetch(API_URL + "/providers");
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+    const respData = await resp.json();
+    let providers = respData.providers;
+    if (!providers) return [];
 
-  const respData = await resp.json();
-  let providers = respData.providers;
-  if (!providers) return [];
-  if (query) {
-    providers = matchSorter(providers, query, { keys: ["name"] });
+    if (query) {
+      providers = matchSorter(providers, query, { keys: ["name"] });
+    }
+    return providers.sort(sortBy("name"));
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(`Error fetching providers! Message: ${error.message}`);
   }
-  return providers.sort(sortBy("name"));
 }
 
 export async function getProvider(uid) {
-  const resp = await fetch("http://localhost:5050/api/v1/providers/" + uid);
-  if (!resp.ok) {
-    throw new Error(`HTTP error! Status: ${resp.status}`);
+  try {
+    const resp = await fetch(API_URL + "/providers/" + uid);
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+
+    const provider = await resp.json();
+    return provider ?? null;
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(
+      `Error fetching provider ${uid}! Message: ${error.message}`,
+    );
   }
-  const provider = await resp.json();
-  return provider ?? null;
 }
 
 export async function getProviderProjections(uid) {
-  const resp = await fetch(
-    "http://localhost:5050/api/v1/providers/" + uid + "/projections",
-  );
-  const embeddings = await resp.json();
-  return embeddings ?? null;
+  try {
+    const resp = await fetch(API_URL + "/providers/" + uid + "/projections");
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+
+    const embeddings = await resp.json();
+    return embeddings ?? null;
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(
+      `Error fetching provider ${uid} projections! Message: ${error.message}`,
+    );
+  }
 }
 
 export async function embedData(uid, updates) {
@@ -68,48 +92,60 @@ export async function embedData(uid, updates) {
     }
   }
 
-  const resp = await fetch(
-    "http://localhost:5050/api/v1/providers/" + uid + "/embeddings",
-    {
+  try {
+    const resp = await fetch(API_URL + "/providers/" + uid + "/embeddings", {
       method: "PUT",
       body: JSON.stringify(data),
       headers: {
         "Content-Type": "application/json",
       },
-    },
-  );
+    });
 
-  if (!resp.ok) {
-    throw new Error(`HTTP error! Status: ${resp.status}`);
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(
+      `Error embdding data for provider ${uid}! Message: ${error.message}`,
+    );
   }
 }
 
 export async function deleteData(uid) {
-  const resp = await fetch(
-    "http://localhost:5050/api/v1/providers/" + uid + "/embeddings",
-    {
+  try {
+    const resp = await fetch(API_URL + "/providers/" + uid + "/embeddings", {
       method: "DELETE",
-    },
-  );
+    });
 
-  if (!resp.ok) {
-    throw new Error(`HTTP error! Status: ${resp.status}`);
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(
+      `Error deleting data for provider ${uid}! Message: ${error.message}`,
+    );
   }
 }
 
 export async function computeData(uid, updates) {
-  const resp = await fetch(
-    "http://localhost:5050/api/v1/providers/" + uid + "/projections",
-    {
+  try {
+    const resp = await fetch(API_URL + "/providers/" + uid + "/projections", {
       method: "PATCH",
       body: JSON.stringify(updates),
       headers: {
         "Content-Type": "application/json",
       },
-    },
-  );
+    });
 
-  if (!resp.ok) {
-    throw new Error(`HTTP error! Status: ${resp.status}`);
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(
+      `Error computing data for provider ${uid}! Message: ${error.message}`,
+    );
   }
 }
