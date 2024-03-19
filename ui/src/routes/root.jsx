@@ -12,8 +12,15 @@ import { useEffect } from "react";
 export async function loader({ request }) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q");
-  const providers = await getProviders(q);
-  return { providers, q };
+  try {
+    const providers = await getProviders(q);
+    return { providers, q };
+  } catch (error) {
+    throw new Response("", {
+      status: error.Status,
+      statusText: "Fetching providers failed!",
+    });
+  }
 }
 
 export default function Root() {

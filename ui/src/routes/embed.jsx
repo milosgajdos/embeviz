@@ -41,7 +41,7 @@ export async function action({ request, params }) {
       } catch (error) {
         throw new Response("", {
           status: error.Status,
-          statusText: "Projection failed",
+          statusText: "Computing projections failed!",
         });
       }
       break;
@@ -53,15 +53,30 @@ export async function action({ request, params }) {
 
 export async function loader({ params }) {
   // TODO: fetch provider and embeddings in parallel
-  const provider = await getProvider(params.uid);
-  if (!provider) {
+  let provider;
+  try {
+    provider = await getProvider(params.uid);
+    if (!provider) {
+      throw new Response("", {
+        status: 404,
+        statusText: "Not found!",
+      });
+    }
+  } catch (error) {
     throw new Response("", {
-      status: 404,
-      statusText: "Not Found",
+      status: error.Status,
+      statusText: "Failed reading provider!",
     });
   }
-  const { embeddings } = (await getProviderProjections(params.uid)) ?? [];
-  return { provider, embeddings };
+  try {
+    const { embeddings } = await getProviderProjections(params.uid);
+    return { provider, embeddings };
+  } catch (error) {
+    throw new Response("", {
+      status: error.Status,
+      statusText: "Fetching projections failed!",
+    });
+  }
 }
 
 export default function Embed() {
