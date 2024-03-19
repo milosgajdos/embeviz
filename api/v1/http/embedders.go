@@ -22,6 +22,10 @@ func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingsUpdate
 		err  error
 	)
 
+	if len(req.Text) == 0 {
+		return []v1.Embedding{}, nil
+	}
+
 	chunks := []string{req.Text}
 
 	// chunk input data if requested
@@ -38,54 +42,59 @@ func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingsUpdate
 		chunks = rs.Split(req.Text)
 	}
 
+	// TODO: make sure the input vals for Embedding request
+	// isn't exceeding max number of tokens e.g.
+	// for OpenAI: https://platform.openai.com/docs/api-reference/embeddings/create
+
 	results := make([]v1.Embedding, 0, len(chunks))
 
-	for _, chunk := range chunks {
-		switch p := embedder.(type) {
-		case *vertexai.Client:
-			embReq := &vertexai.EmbeddingRequest{
-				Instances: []vertexai.Instance{
-					{
-						Content:  chunk,
-						TaskType: vertexai.RetrQueryTask,
-					},
-				},
-				Params: vertexai.Params{
-					AutoTruncate: false,
-				},
-			}
-			embs, err = p.Embed(ctx, embReq)
-			if err != nil {
-				return nil, err
-			}
-		case *openai.Client:
-			embReq := &openai.EmbeddingRequest{
-				Input:          chunk,
-				Model:          openai.TextAdaV2,
-				EncodingFormat: openai.EncodingFloat,
-			}
-			embs, err = p.Embed(ctx, embReq)
-			if err != nil {
-				return nil, err
-			}
-		case *cohere.Client:
-			embReq := &cohere.EmbeddingRequest{
-				Texts:     []string{chunk},
-				Model:     cohere.EnglishV3,
-				InputType: cohere.ClusteringInput,
-				Truncate:  cohere.NoneTrunc,
-			}
-			embs, err = p.Embed(ctx, embReq)
-			if err != nil {
-				return nil, err
-			}
-		default:
-			return nil, errors.New("unsupported provider")
+	switch p := embedder.(type) {
+	case *vertexai.Client:
+		instances := make([]vertexai.Instance, 0, len(chunks))
+		for _, chunk := range chunks {
+			instances = append(instances, vertexai.Instance{
+				Content:  chunk,
+				TaskType: vertexai.RetrQueryTask,
+			})
 		}
-		if len(embs) > 0 {
-			vals = make([]float64, len(embs[0].Vector))
-			copy(vals, embs[0].Vector)
+		embReq := &vertexai.EmbeddingRequest{
+			Instances: instances,
+			Params: vertexai.Params{
+				AutoTruncate: false,
+			},
 		}
+		embs, err = p.Embed(ctx, embReq)
+		if err != nil {
+			return nil, err
+		}
+	case *openai.Client:
+		embReq := &openai.EmbeddingRequest{
+			Input:          chunks,
+			Model:          openai.TextAdaV2,
+			EncodingFormat: openai.EncodingFloat,
+		}
+		embs, err = p.Embed(ctx, embReq)
+		if err != nil {
+			return nil, err
+		}
+	case *cohere.Client:
+		embReq := &cohere.EmbeddingRequest{
+			Texts:     chunks,
+			Model:     cohere.EnglishV3,
+			InputType: cohere.ClusteringInput,
+			Truncate:  cohere.NoneTrunc,
+		}
+		embs, err = p.Embed(ctx, embReq)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unsupported provider")
+	}
+
+	for _, emb := range embs {
+		vals = make([]float64, len(emb.Vector))
+		copy(vals, emb.Vector)
 		r := v1.Embedding{
 			UID:      uuid.NewString(),
 			Values:   vals,

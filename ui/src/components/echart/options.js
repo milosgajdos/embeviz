@@ -77,10 +77,10 @@ const defaultSeriesOptions = {
   },
 };
 
-export function makeSeries(name, dim, data) {
+export function makeSeries(dim, data) {
   // TODO: clean this up, it's very fugly
   data = data.map((obj) => {
-    const { metadata, ...rest } = obj;
+    const { metadata } = obj;
     const name = metadata?.label;
     const color = metadata?.color;
 
@@ -112,6 +112,6 @@ export function makeSeries(name, dim, data) {
 export function getChartOption(dim, embeddings) {
   return {
     ...defaultChartOptions[dim],
-    series: makeSeries(name, dim, embeddings),
+    series: makeSeries(dim, embeddings),
   };
 }
