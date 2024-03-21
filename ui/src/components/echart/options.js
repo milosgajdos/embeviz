@@ -17,7 +17,7 @@ const defaultToolbox = {
 
 const defaultToolTip = {
   show: true,
-  formatter: "{b} [{c}]",
+  formatter: "{b}",
 };
 
 const defaultLegend = {

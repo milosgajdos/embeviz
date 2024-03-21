@@ -274,23 +274,20 @@ func (s *Server) UpdateProviderEmbeddings(c *fiber.Ctx) error {
 		})
 	}
 
+	if req.Metadata == nil {
+		req.Metadata = make(map[string]any)
+	}
+	req.Metadata[v1.ProjMetaKey] = req.Projection
+	if req.Label != "" {
+		req.Metadata[v1.LabelMetaKey] = req.Label
+	}
+
 	ctx := context.Background()
 	embs, err := FetchEmbeddings(ctx, embedder, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
 			Error: err.Error(),
 		})
-	}
-
-	if req.Metadata == nil {
-		req.Metadata = make(map[string]any)
-	}
-	req.Metadata["projection"] = req.Projection
-	if req.Label != "" {
-		req.Metadata["label"] = req.Label
-	}
-	for _, e := range embs {
-		e.Metadata = req.Metadata
 	}
 
 	res, err := s.ProvidersService.UpdateProviderEmbeddings(ctx, uid.String(), embs, req.Projection)
