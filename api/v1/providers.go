@@ -57,6 +57,11 @@ type ProviderFilter struct {
 	Limit  int `json:"limit"`
 }
 
+const (
+	ProjMetaKey  = "projection"
+	LabelMetaKey = "label"
+)
+
 // EmbeddingsUpdate is used to fetch embeddings.
 // NOTE: we call this an Update because it updates the vector store.
 type EmbeddingsUpdate struct {
