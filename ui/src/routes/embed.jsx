@@ -12,7 +12,7 @@ import {
   embedData,
   computeData,
 } from "../lib/embeddings";
-import EChart from "../components/echart/echart";
+import ECharts from "../components/echarts/echarts";
 import EmbedForm from "../components/embed-form/embed-form";
 
 export async function action({ request, params }) {
@@ -88,29 +88,18 @@ export default function Embed() {
   return (
     <>
       <div id="embed">
-        <div>
-          <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
-          {provider.description && <p>{provider.description}</p>}
-          <br />
-          <div id="charts">
-            <EChart
-              dim="3D"
-              isLoading={navigation.state === "loading" || isFetching}
-              embeddings={embeddings["3D"]}
-            />
-            <EChart
-              dim="2D"
-              isLoading={navigation.state === "loading" || isFetching}
-              embeddings={embeddings["2D"]}
-            />
-          </div>
-        </div>
+        <h1>{provider.name ? <> {provider.name}</> : <i>No Name</i>} </h1>
+        {provider.description && <p>{provider.description}</p>}
+        <ECharts
+          isLoading={navigation.state === "loading" || isFetching}
+          embeddings={embeddings}
+        />
       </div>
       <EmbedForm
         // NOTE: we need to "revalidate" the parent component
         // if we drop the data so the charts are rerendered.
         onDrop={() => revalidator.revalidate()}
-        onFetching={(fetching) => setFetching(fetching)}
+        onFetch={(fetching) => setFetching(fetching)}
       />
     </>
   );

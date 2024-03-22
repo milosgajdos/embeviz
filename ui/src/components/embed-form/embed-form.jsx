@@ -6,7 +6,7 @@ import Projection from "./projection";
 import Chunking from "./chunking";
 import Modal from "../modal/modal";
 
-export default function EmbedForm({ onDrop, onFetching }) {
+export default function EmbedForm({ onDrop, onFetch }) {
   let params = useParams();
   const navigation = useNavigation();
 
@@ -24,7 +24,7 @@ export default function EmbedForm({ onDrop, onFetching }) {
   const [isOpenModal, setOpenModal] = useState(false);
 
   useEffect(() => {
-    onFetching(
+    onFetch(
       navigation.state === "submitting" || navigation.state === "loading",
     );
   }, [navigation.state]);
