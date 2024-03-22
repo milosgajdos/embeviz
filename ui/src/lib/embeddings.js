@@ -1,5 +1,4 @@
 import { matchSorter } from "match-sorter";
-import sortBy from "sort-by";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5050/api/v1";
 
@@ -20,10 +19,10 @@ export async function getProviders(query) {
     let providers = respData.providers;
     if (!providers) return [];
 
-    if (query) {
-      providers = matchSorter(providers, query, { keys: ["name"] });
+    if (!query) {
+      query = "";
     }
-    return providers.sort(sortBy("name"));
+    return matchSorter(providers, query, { keys: ["name"] });
   } catch (error) {
     console.error("An error occurred:", error.message);
     throw new Error(`Error fetching providers! Message: ${error.message}`);
