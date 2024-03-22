@@ -36,7 +36,7 @@ embeviz
 
 # local env files
 **/.env*.local
-**/.env
+**/.env*
 
 # typescript
 **/*.tsbuildinfo
