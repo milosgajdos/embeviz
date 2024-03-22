@@ -307,7 +307,7 @@ i {
     white-space: break-spaces;
 }
 
-#charts {
+#echarts {
     display: flex;
     gap: 2rem;
     margin-bottom: 20px;

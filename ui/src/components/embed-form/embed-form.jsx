@@ -1,8 +1,7 @@
 import { Form, useNavigation, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { deleteData } from "../../lib/embeddings";
-import InputLabel from "./input-label";
-import InputText from "./input-text";
+import Input from "./input";
 import Projection from "./projection";
 import Chunking from "./chunking";
 import Modal from "../modal/modal";
@@ -43,16 +42,12 @@ export default function EmbedForm({ onDrop, onFetch }) {
   return (
     <>
       <Form method="post" id="embed-form">
-        <div id="embed-input">
-          <InputLabel
-            label={label}
-            onLabelChange={(e) => setLabel(e.target.value)}
-          />
-          <InputText
-            text={text}
-            onTextChange={(e) => setText(e.target.value)}
-          />
-        </div>
+        <Input
+          label={label}
+          onLabelChange={(e) => setLabel(e.target.value)}
+          text={text}
+          onTextChange={(e) => setText(e.target.value)}
+        />
         <Projection
           projection={projection}
           onProjectionChange={(e) => setProjection(e.target.value)}
