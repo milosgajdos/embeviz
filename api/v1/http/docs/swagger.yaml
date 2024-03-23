@@ -15,6 +15,26 @@ definitions:
         description: Trim empty space chars.
         type: boolean
     type: object
+  v1.ChunkingInput:
+    properties:
+      input:
+        description: Input to split into chunks.
+        type: string
+      options:
+        allOf:
+        - $ref: '#/definitions/v1.Chunking'
+        description: Options to configure chunking.
+    type: object
+  v1.ChunkingResponse:
+    properties:
+      chunks:
+        description: Chunks contain indices into the chunked input.
+        items:
+          items:
+            type: integer
+          type: array
+        type: array
+    type: object
   v1.Embedding:
     properties:
       metadata:
@@ -133,6 +153,42 @@ info:
   title: Embeddings API
   version: "1.0"
 paths:
+  /v1/chunks:
+    post:
+      consumes:
+      - application/json
+      description: Get chunks from the given input
+      parameters:
+      - description: Get input chunks
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ChunkingInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/v1.ChunkingResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.ErrorResponse'
+      summary: Get chunks from the given input.
+      tags:
+      - providers
   /v1/providers:
     get:
       description: Get all available providers.

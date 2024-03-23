@@ -8,12 +8,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
+	"github.com/milosgajdos/embeviz/api/v1/internal"
 )
 
 func (s *Server) registerProviderRoutes(r fiber.Router) {
 	routes := fiber.New()
 	// get all providers stored in the database
 	routes.Get("/providers", s.GetAllProviders)
+	// get chunk indices for the given input
+	routes.Post("/chunks", s.GetChunks)
 	// get a provider by UID
 	routes.Get("/providers/:uid", s.GetProviderByUID)
 	// get provider embeddings
@@ -67,6 +70,49 @@ func (s *Server) GetAllProviders(c *fiber.Ctx) error {
 	return c.JSON(v1.ProvidersResponse{
 		Providers: providers,
 		Page:      page,
+	})
+}
+
+// GetChunks chunks the given input and returns indices of the chunks.
+// @Summary Get chunks from the given input.
+// @Description Get chunks from the given input
+// @Tags providers
+// @Accept json
+// @Produce json
+// @Param input body v1.ChunkingInput true "Get input chunks"
+// @Success 200 {object} []v1.ChunkingResponse
+// @Failure 400 {object} v1.ErrorResponse
+// @Failure 404 {object} v1.ErrorResponse
+// @Failure 500 {object} v1.ErrorResponse
+// @Router /v1/chunks [post]
+func (s *Server) GetChunks(c *fiber.Ctx) error {
+	req := new(v1.ChunkingInput)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	if req.Input == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: "empty input provided",
+		})
+	}
+	if req.Options.Size <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: fmt.Sprintf("invalid chunking size: %d", req.Options.Size),
+		})
+	}
+
+	chunks, err := internal.GetChunks(req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	return c.JSON(v1.ChunkingResponse{
+		Chunks: chunks,
 	})
 }
 

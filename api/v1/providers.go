@@ -84,6 +84,14 @@ type Chunking struct {
 	Sep bool `json:"sep"`
 }
 
+// ChunkingInput is used for chunking.
+type ChunkingInput struct {
+	// Options to configure chunking.
+	Options Chunking `json:"options"`
+	// Input to split into chunks.
+	Input string `json:"input"`
+}
+
 // ProjectionsUpdate is used to recompute embedding projections.
 type ProjectionsUpdate struct {
 	Projection Projection     `json:"projection"`

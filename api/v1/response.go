@@ -19,6 +19,12 @@ type Page struct {
 	Count *int `json:"count,omitempty"`
 }
 
+// ChunkingResponse is returned when input chunking has been requested.
+type ChunkingResponse struct {
+	// Chunks contain indices into the chunked input.
+	Chunks [][]int `json:"chunks"`
+}
+
 // ProvidersResponse is returned when querying providers.
 type ProvidersResponse struct {
 	Providers []*Provider `json:"providers"`
