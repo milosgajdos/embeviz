@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,94 @@ import (
 	v1 "github.com/milosgajdos/embeviz/api/v1"
 	"github.com/milosgajdos/embeviz/api/v1/memory"
 )
+
+func TestGetChunks(t *testing.T) {
+	t.Run("200", func(t *testing.T) {
+		s := MustServer(t)
+
+		input := v1.ChunkingInput{
+			Options: v1.Chunking{
+				Size:    3,
+				Overlap: 2,
+				Trim:    true,
+			},
+			Input: "Foo Bar Car",
+		}
+
+		testBody, err := json.Marshal(input)
+		if err != nil {
+			t.Fatalf("failed to serialise req body: %v", err)
+		}
+
+		req := httptest.NewRequest("POST", "/api/v1/chunks", bytes.NewReader(testBody))
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := s.app.Test(req)
+		if err != nil {
+			t.Fatalf("failed to get response: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if code := resp.StatusCode; code != http.StatusOK {
+			t.Fatalf("expected status code: %d, got: %d", http.StatusOK, code)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("failed to read response body: %v", err)
+		}
+
+		chunks := new(v1.ChunkingResponse)
+		if err := json.Unmarshal(body, chunks); err != nil {
+			t.Fatalf("failed to decode body: %v", err)
+		}
+
+		// TODO: verify these are correct indices
+		t.Logf("chunks: %v", chunks)
+	})
+
+	t.Run("400", func(t *testing.T) {
+		s := MustServer(t)
+
+		inputs := []v1.ChunkingInput{
+			{
+				Options: v1.Chunking{
+					Size:    3,
+					Overlap: 2,
+					Trim:    true,
+				},
+			},
+			{
+				Options: v1.Chunking{
+					Size:    -3,
+					Overlap: 2,
+					Trim:    true,
+				},
+				Input: "foobar",
+			},
+		}
+
+		for _, input := range inputs {
+			testBody, err := json.Marshal(input)
+			if err != nil {
+				t.Fatalf("failed to serialise req body: %v", err)
+			}
+
+			req := httptest.NewRequest("POST", "/api/v1/chunks", bytes.NewReader(testBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := s.app.Test(req)
+			if err != nil {
+				t.Fatalf("failed to get response: %v", err)
+			}
+			defer resp.Body.Close()
+
+			if code := resp.StatusCode; code != http.StatusBadRequest {
+				t.Fatalf("expected status code: %d, got: %d", http.StatusBadRequest, code)
+			}
+		}
+	})
+}
 
 func TestGetAllProviders(t *testing.T) {
 	t.Run("200", func(t *testing.T) {

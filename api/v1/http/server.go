@@ -106,7 +106,7 @@ func NewServer(options ...Option) (*Server, error) {
 	v1 := api.Group("/v1")
 	v1.Get("/docs/*", swagger.New())
 
-	s.registerProviderRoutes(v1)
+	s.registerRoutes(v1)
 
 	return s, nil
 }
