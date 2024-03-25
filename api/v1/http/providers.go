@@ -33,7 +33,9 @@ func (s *Server) registerRoutes(r fiber.Router) {
 	r.Mount("/", routes)
 }
 
-// GetChunks chunks the given input and returns indices of the chunks.
+// GetChunks chunks the given input using recursice character splitter (RCS)
+// and returns indices of the chunks. RCS split separators are defined as: ["\n\n", "\n", " ", ""].
+// See: https://python.langchain.com/docs/modules/data_connection/document_transformers/recursive_text_splitter
 // @Summary Get chunks from the given input.
 // @Description Get chunks from the given input
 // @Tags providers

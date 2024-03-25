@@ -12,9 +12,9 @@ func TestGetChunkIndices(t *testing.T) {
 		chunks []string
 		exp    [][]int
 	}{
-		{"", []string{}, [][]int(nil)},
-		{"foo", []string{}, [][]int(nil)},
-		{"", []string{"foo", "bar"}, [][]int(nil)},
+		{"", []string{}, [][]int{}},
+		{"foo", []string{}, [][]int{}},
+		{"", []string{"foo", "bar"}, [][]int{}},
 		{"こんにちは世界", []string{"こ", "世界"}, [][]int{{0, 3}, {15, 21}}},
 	}
 
@@ -22,7 +22,7 @@ func TestGetChunkIndices(t *testing.T) {
 		tc := tc
 		t.Run(fmt.Sprintf("input=%q,chunks=%v", tc.input, tc.chunks), func(t *testing.T) {
 			t.Parallel()
-			indices := GetChunkIndices(tc.chunks, tc.input)
+			indices := GetChunksIndices(tc.chunks, tc.input)
 			if !reflect.DeepEqual(indices, tc.exp) {
 				t.Errorf("expected: %v, got: %v", tc.exp, indices)
 			}

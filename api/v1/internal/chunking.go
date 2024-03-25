@@ -8,21 +8,26 @@ import (
 	"github.com/milosgajdos/go-embeddings/document/text"
 )
 
-// GetChunkIndices returns indices of each chunk in chunks inside s.
-func GetChunkIndices(chunks []string, s string) [][]int {
-	var indices [][]int //nolint:prealloc
-
-	// Iterate over each chunk
-	for _, chunk := range chunks {
-		start := strings.Index(s, chunk)
-		if start == -1 {
-			continue // Chunk not found in the string, skip
-		}
-		end := start + len(chunk)
-		indices = append(indices, []int{start, end})
+func getIndices(chunk, s string, startIdx int) []int {
+	index := strings.Index(s[startIdx:], chunk)
+	if index == -1 {
+		return []int{}
 	}
+	return []int{index + startIdx, index + startIdx + len(chunk)}
+}
 
-	return indices
+// GetChunksIndices returns indices of each chunk in chunks inside s.
+func GetChunksIndices(chunks []string, s string) [][]int {
+	startIdx := 0
+	result := make([][]int, 0, len(chunks))
+	for _, chunk := range chunks {
+		indices := getIndices(chunk, s, startIdx)
+		if len(indices) > 0 {
+			startIdx = indices[0]
+			result = append(result, indices)
+		}
+	}
+	return result
 }
 
 // GetChunks chunks the input and returns chunk indices of each chunk.
@@ -45,5 +50,5 @@ func GetChunks(req *v1.ChunkingInput) ([][]int, error) {
 	rs := text.NewRecursiveCharSplitter().
 		WithSplitter(s)
 
-	return GetChunkIndices(rs.Split(req.Input), req.Input), nil
+	return GetChunksIndices(rs.Split(req.Input), req.Input), nil
 }
