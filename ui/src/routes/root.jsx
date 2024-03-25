@@ -6,7 +6,7 @@ import {
   useNavigation,
   useSubmit,
 } from "react-router-dom";
-import { getProviders } from "../lib/embeddings";
+import { getProviders } from "../lib/api";
 import { useEffect } from "react";
 
 export async function loader({ request }) {

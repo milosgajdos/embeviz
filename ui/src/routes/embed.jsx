@@ -11,7 +11,9 @@ import {
   getProviderProjections,
   embedData,
   computeData,
-} from "../lib/embeddings";
+  getInputChunks,
+  computeChunks,
+} from "../lib/api";
 import ECharts from "../components/echarts/echarts";
 import EmbedForm from "../components/embed-form/embed-form";
 
@@ -19,6 +21,8 @@ export async function action({ request, params }) {
   const formData = await request.formData();
   const intent = formData.get("intent");
   const updates = Object.fromEntries(formData);
+
+  console.log("intent: " + intent);
 
   // TODO: handle errors better:
   // Status message should inform the user WHY the failure happened
@@ -45,6 +49,17 @@ export async function action({ request, params }) {
         });
       }
       break;
+    case "chunk":
+      try {
+        console.log("chunking", updates);
+        await computeChunks(updates);
+      } catch (error) {
+        throw new Response("", {
+          status: error.Status,
+          statusText: "Getting chunks failed!",
+        });
+      }
+      break;
     default:
       throw json({ message: "Invalid intent" }, { status: 400 });
   }
@@ -53,7 +68,7 @@ export async function action({ request, params }) {
 
 export async function loader({ params }) {
   // TODO: fetch provider and embeddings in parallel
-  let provider;
+  let provider, embeddings, chunks;
   try {
     provider = await getProvider(params.uid);
     if (!provider) {
@@ -69,18 +84,27 @@ export async function loader({ params }) {
     });
   }
   try {
-    const { embeddings } = await getProviderProjections(params.uid);
-    return { provider, embeddings };
+    ({ embeddings } = await getProviderProjections(params.uid));
   } catch (error) {
     throw new Response("", {
       status: error.Status,
       statusText: "Fetching projections failed!",
     });
   }
+  try {
+    ({ chunks } = await getInputChunks());
+  } catch (error) {
+    throw new Response("", {
+      status: error.Status,
+      statusText: "Fetching chunks failed!",
+    });
+  }
+
+  return { provider, embeddings, chunks };
 }
 
 export default function Embed() {
-  const { provider, embeddings } = useLoaderData();
+  const { provider, embeddings, chunks } = useLoaderData();
   const navigation = useNavigation();
   const revalidator = useRevalidator();
   const [isFetching, setFetching] = useState(false);
@@ -100,6 +124,7 @@ export default function Embed() {
         // if we drop the data so the charts are rerendered.
         onDrop={() => revalidator.revalidate()}
         onFetch={(fetching) => setFetching(fetching)}
+        chunks={chunks}
       />
     </>
   );

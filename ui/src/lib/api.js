@@ -9,6 +9,22 @@ const defaultChunking = {
   sep: false,
 };
 
+let chunkCache = { chunks: [] };
+
+// TODO: we need to store chunks somewhere
+// instead of fetching them from global var
+export async function getInputChunks() {
+  try {
+    return chunkCache;
+  } catch (error) {
+    console.log("error fetching chunks");
+  }
+}
+
+export function resetChunks() {
+  chunkCache = { chunks: [] };
+}
+
 export async function getProviders(query) {
   try {
     const resp = await fetch(API_URL + "/providers");
@@ -146,5 +162,54 @@ export async function computeData(uid, updates) {
     throw new Error(
       `Error computing data for provider ${uid}! Message: ${error.message}`,
     );
+  }
+}
+
+// TODO: we need to store the chunks somewhere
+// other than the global variable; we could stash
+// them into local storage to start with
+export async function computeChunks(updates) {
+  if (!updates.text) {
+    return chunkCache;
+  }
+
+  let options = {
+    ...defaultChunking,
+    size: parseInt(updates.size, 10),
+    overlap: parseInt(updates.overlap, 10),
+  };
+
+  if (updates.trim === "on") {
+    options.trim = true;
+  }
+  if (updates.sep === "on") {
+    options.sep = true;
+  }
+
+  const chunkingInput = {
+    options: options,
+    input: updates.text,
+  };
+
+  console.log(chunkingInput);
+
+  try {
+    const resp = await fetch(API_URL + "/chunks", {
+      method: "POST",
+      body: JSON.stringify(chunkingInput),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP error! Status: ${resp.status}`);
+    }
+    console.log("fetched chunks");
+    chunkCache = await resp.json();
+    console.log(chunkCache);
+  } catch (error) {
+    console.error("An error occurred:", error.message);
+    throw new Error(`Error getting chunks! Message: ${error.message}`);
   }
 }

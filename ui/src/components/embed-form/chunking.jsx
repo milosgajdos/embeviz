@@ -46,7 +46,6 @@ export default function Chunking({
               />
             </div>
           </div>
-          <br />
           <div>
             <input type="checkbox" id="trim" name="trim" />
             <label htmlFor="trim"> Trim</label>
@@ -55,6 +54,14 @@ export default function Chunking({
             <input type="checkbox" id="sep" name="sep" />
             <label htmlFor="sep"> Separator</label>
           </div>
+          <button
+            type="submit"
+            className="update-btn"
+            name="intent"
+            value="chunk"
+          >
+            Highlight
+          </button>
         </fieldset>
       </fieldset>
     </div>

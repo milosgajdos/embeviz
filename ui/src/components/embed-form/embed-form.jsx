@@ -1,12 +1,12 @@
 import { Form, useNavigation, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { deleteData } from "../../lib/embeddings";
+import { deleteData, resetChunks } from "../../lib/api";
 import Input from "./input";
 import Projection from "./projection";
 import Chunking from "./chunking";
 import Modal from "../modal/modal";
 
-export default function EmbedForm({ onDrop, onFetch }) {
+export default function EmbedForm({ onDrop, onFetch, chunks }) {
   let params = useParams();
   const navigation = useNavigation();
 
@@ -22,6 +22,8 @@ export default function EmbedForm({ onDrop, onFetch }) {
   const [overlap, setOverlap] = useState("0");
   // Drop data modal
   const [isOpenModal, setOpenModal] = useState(false);
+  // highlight text
+  const [hlText, setHlText] = useState("");
 
   useEffect(() => {
     onFetch(
@@ -46,7 +48,16 @@ export default function EmbedForm({ onDrop, onFetch }) {
           label={label}
           onLabelChange={(e) => setLabel(e.target.value)}
           text={text}
-          onTextChange={(e) => setText(e.target.value)}
+          onTextChange={(e) => {
+            resetChunks(); // reset input chunks
+            setText(e.target.value);
+          }}
+          chunks={chunks}
+          hlText={hlText}
+          onHlText={(text) => {
+            resetChunks(); // reset input chunks
+            setHlText(text);
+          }}
         />
         <Projection
           projection={projection}
@@ -54,6 +65,8 @@ export default function EmbedForm({ onDrop, onFetch }) {
           onProjectionClearInput={() => {
             setLabel("");
             setText("");
+            setHlText("");
+            resetChunks(); // reset input chunks
           }}
           onProjetionDrop={() => setOpenModal(true)}
           color={color}
@@ -66,6 +79,7 @@ export default function EmbedForm({ onDrop, onFetch }) {
           onSizeChange={(e) => setSize(e.target.value)}
           overlap={overlap}
           onOverlapChange={(e) => setOverlap(e.target.value)}
+          onHighlight={() => console.log("highlight")}
         />
       </Form>
       <Modal isOpen={isOpenModal} onClose={() => setOpenModal(false)}>

@@ -429,3 +429,23 @@ input[type="number"] {
     padding: 0.5rem; /* Add padding for better visual alignment */
     font-size: 1rem; /* Ensure consistent font size */
 }
+
+.blue {
+    background-color: #a3daff;
+}
+
+.red {
+    background-color: #ffc9c9;
+}
+
+.yellow {
+    background-color: #ffec99;
+}
+
+.area {
+    height: 40px;
+    border: 1px solid black;
+    text-align: left;
+    padding: 5px;
+    overflow: scroll;
+}
