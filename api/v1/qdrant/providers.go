@@ -248,14 +248,14 @@ func (p *ProvidersService) GetProviderEmbeddings(ctx context.Context, uid string
 		// vector which is essentially an unnamed vector in the vector map
 		vec := p.GetVectors().GetVectors()
 		if vec != nil {
-			// TODO: grab metadata from p.Payload
 			vals := make([]float64, 0, len(vec.Vectors[""].Data))
 			for _, val := range vec.Vectors[""].Data {
 				vals = append(vals, float64(val))
 			}
 			embs = append(embs, v1.Embedding{
-				UID:    p.Id.GetUuid(),
-				Values: vals,
+				UID:      p.Id.GetUuid(),
+				Values:   vals,
+				Metadata: payload2Meta(p.GetPayload()),
 			})
 		}
 	}
@@ -320,7 +320,9 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 			if vecs != nil {
 				vals := getVecVals(vecs, string(*dim))
 				projs = append(projs, v1.Embedding{
-					Values: vals,
+					UID:      p.Id.GetUuid(),
+					Values:   vals,
+					Metadata: payload2Meta(p.GetPayload()),
 				})
 			}
 		}
@@ -340,12 +342,16 @@ func (p *ProvidersService) GetProviderProjections(ctx context.Context, uid strin
 			// 2D projections
 			proj2DVals := getVecVals(vecs, string(v1.Dim2D))
 			res2DProjs = append(res2DProjs, v1.Embedding{
-				Values: proj2DVals,
+				UID:      p.Id.GetUuid(),
+				Values:   proj2DVals,
+				Metadata: payload2Meta(p.GetPayload()),
 			})
 			// 3D projections
 			proj3DVals := getVecVals(vecs, string(v1.Dim3D))
 			res3DProjs = append(res3DProjs, v1.Embedding{
-				Values: proj3DVals,
+				UID:      p.Id.GetUuid(),
+				Values:   proj3DVals,
+				Metadata: payload2Meta(p.GetPayload()),
 			})
 		}
 	}
@@ -371,6 +377,17 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		if pointUID == "" {
 			pointUID = uuid.NewString()
 		}
+		md := make(map[string]*pb.Value)
+		for k, v := range e.Metadata {
+			// FIXME: v can be of any type
+			if stringVal, ok := v.(string); ok {
+				md[k] = &pb.Value{
+					Kind: &pb.Value_StringValue{
+						StringValue: stringVal,
+					},
+				}
+			}
+		}
 		upsertPoints = append(upsertPoints, &pb.PointStruct{
 			Id: &pb.PointId{
 				PointIdOptions: &pb.PointId_Uuid{
@@ -388,8 +405,7 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 					},
 				},
 			},
-			// TODO: metadata
-			Payload: map[string]*pb.Value{},
+			Payload: md,
 		})
 	}
 
@@ -433,14 +449,14 @@ func (p *ProvidersService) UpdateProviderEmbeddings(ctx context.Context, uid str
 		for _, p := range resp.GetResult() {
 			vecs := p.GetVectors().GetVectors()
 			if vecs != nil {
-				// TODO: grab metadata from p.Payload
 				vals := make([]float64, 0, len(vecs.Vectors[""].Data))
 				for _, val := range vecs.Vectors[""].Data {
 					vals = append(vals, float64(val))
 				}
 				embs = append(embs, v1.Embedding{
-					UID:    p.Id.GetUuid(),
-					Values: vals,
+					UID:      p.Id.GetUuid(),
+					Values:   vals,
+					Metadata: payload2Meta(p.GetPayload()),
 				})
 			}
 		}
@@ -595,14 +611,14 @@ func (p *ProvidersService) ComputeProviderProjections(ctx context.Context, uid s
 		for _, p := range resp.GetResult() {
 			vecs := p.GetVectors().GetVectors()
 			if vecs != nil {
-				// TODO: grab metadata from p.Payload
 				vals := make([]float64, 0, len(vecs.Vectors[""].Data))
 				for _, val := range vecs.Vectors[""].Data {
 					vals = append(vals, float64(val))
 				}
 				embs = append(embs, v1.Embedding{
-					UID:    p.Id.GetUuid(),
-					Values: vals,
+					UID:      p.Id.GetUuid(),
+					Values:   vals,
+					Metadata: payload2Meta(p.GetPayload()),
 				})
 			}
 		}
@@ -674,4 +690,27 @@ func (p *ProvidersService) getProviderMetadata(ctx context.Context, uid string) 
 	md["distance"] = params.Map[""].Distance
 
 	return md, nil
+}
+
+func payload2Meta(payload map[string]*pb.Value) map[string]any {
+	md := make(map[string]any)
+	for k, v := range payload {
+		switch v := v.GetKind().(type) {
+		case *pb.Value_DoubleValue:
+			md[k] = v.DoubleValue
+		case *pb.Value_IntegerValue:
+			md[k] = v.IntegerValue
+		case *pb.Value_NullValue:
+			md[k] = v.NullValue
+		case *pb.Value_BoolValue:
+			md[k] = v.BoolValue
+		case *pb.Value_StructValue:
+			md[k] = v.StructValue
+		case *pb.Value_StringValue:
+			md[k] = v.StringValue
+		default:
+			continue
+		}
+	}
+	return md
 }
