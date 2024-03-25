@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -23,6 +24,10 @@ const (
 // FetchEmbeddings fetches embeddings using the provided embedder.
 // It returns the fetched embeddings or fails with error.
 func FetchEmbeddings(ctx context.Context, embedder any, req *v1.EmbeddingsUpdate) ([]v1.Embedding, error) {
+	if req == nil {
+		return nil, fmt.Errorf("invalid request: %v", req)
+	}
+
 	if len(req.Text) == 0 {
 		return []v1.Embedding{}, nil
 	}

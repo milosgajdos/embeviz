@@ -8,10 +8,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	v1 "github.com/milosgajdos/embeviz/api/v1"
+	"github.com/milosgajdos/embeviz/api/v1/internal"
 )
 
-func (s *Server) registerProviderRoutes(r fiber.Router) {
+func (s *Server) registerRoutes(r fiber.Router) {
 	routes := fiber.New()
+	// get chunk indices for the given input
+	routes.Post("/chunks", s.GetChunks)
 	// get all providers stored in the database
 	routes.Get("/providers", s.GetAllProviders)
 	// get a provider by UID
@@ -28,6 +31,50 @@ func (s *Server) registerProviderRoutes(r fiber.Router) {
 	routes.Patch("/providers/:uid/projections", s.ComputeProviderProjections)
 	// mount graph routes at the root of r
 	r.Mount("/", routes)
+}
+
+// GetChunks chunks the given input using recursice character splitter (RCS)
+// and returns indices of the chunks. RCS split separators are defined as: ["\n\n", "\n", " ", ""].
+// See: https://python.langchain.com/docs/modules/data_connection/document_transformers/recursive_text_splitter
+// @Summary Get chunks from the given input.
+// @Description Get chunks from the given input
+// @Tags providers
+// @Accept json
+// @Produce json
+// @Param input body v1.ChunkingInput true "Get input chunks"
+// @Success 200 {object} []v1.ChunkingResponse
+// @Failure 400 {object} v1.ErrorResponse
+// @Failure 500 {object} v1.ErrorResponse
+// @Router /v1/chunks [post]
+func (s *Server) GetChunks(c *fiber.Ctx) error {
+	req := new(v1.ChunkingInput)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	if req.Input == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: "empty input",
+		})
+	}
+	if req.Options.Size <= 0 || req.Options.Overlap < 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(v1.ErrorResponse{
+			Error: fmt.Sprintf("invalid options: size=%d/overlap=%d", req.Options.Size, req.Options.Overlap),
+		})
+	}
+
+	chunks, err := internal.GetChunks(req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(v1.ErrorResponse{
+			Error: err.Error(),
+		})
+	}
+
+	return c.JSON(v1.ChunkingResponse{
+		Chunks: chunks,
+	})
 }
 
 // GetAllProviders returns all available embeddings providers.

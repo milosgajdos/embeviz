@@ -16,6 +16,55 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/chunks": {
+            "post": {
+                "description": "Get chunks from the given input",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "providers"
+                ],
+                "summary": "Get chunks from the given input.",
+                "parameters": [
+                    {
+                        "description": "Get input chunks",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.ChunkingInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/v1.ChunkingResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/providers": {
             "get": {
                 "description": "Get all available providers.",
@@ -397,6 +446,38 @@ const docTemplate = `{
                 "trim": {
                     "description": "Trim empty space chars.",
                     "type": "boolean"
+                }
+            }
+        },
+        "v1.ChunkingInput": {
+            "type": "object",
+            "properties": {
+                "input": {
+                    "description": "Input to split into chunks.",
+                    "type": "string"
+                },
+                "options": {
+                    "description": "Options to configure chunking.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/v1.Chunking"
+                        }
+                    ]
+                }
+            }
+        },
+        "v1.ChunkingResponse": {
+            "type": "object",
+            "properties": {
+                "chunks": {
+                    "description": "Chunks contain indices into the chunked input.",
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },
