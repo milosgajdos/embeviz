@@ -1,3 +1,4 @@
+//go:generate npm --prefix ui run build
 package main
 
 import (
