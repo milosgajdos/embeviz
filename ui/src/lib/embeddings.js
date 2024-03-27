@@ -79,7 +79,7 @@ export async function embedData(uid, updates) {
     if (updates.size) {
       data.chunking.size = parseInt(updates.size, 10);
     }
-    if (updates.chunking.overlap) {
+    if (updates.overlap) {
       data.chunking.overlap = parseInt(updates.overlap, 10);
     }
 
