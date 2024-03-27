@@ -1,6 +1,6 @@
 # embeviz
 
-A simple webapp that helps you visualize embeddings.
+A simple webapp for visualizing text embeddings.
 
 > [!WARNING]
 > THIS PROJECT IS WILDLY EXPERIMENTAL AT THE MOMENT! USE AT YOUR OWN RISK!
@@ -90,9 +90,11 @@ Once you've bundled the webapp and built the Go binary you can run the following
 ```shell
 OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" ./embeviz
 ```
-Alternatively you can also run the following command which builds the app on the fly:
+Alternatively you can also run the following commands, which installs node dependencies and builds the app on the fly:
 ```shell
-OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
+npm --prefix ui install \
+     && go generate ./...  \
+     && OPENAI_API_KEY="sk-XXXX" COHERE_API_KEY="XXX" go run ./...
 ```
 
 You should now be able to access the SPA on [http://localhost:5050/ui](http://localhost:5050/ui).
@@ -101,5 +103,5 @@ The API docs should be available on [http://localhost:5050/api/v1/docs](http://l
 
 # TODO
 
-* [ ] Clean up the code: both Go and React
-* [x] Embed the SPA into the Go binary
+* [ ] Clean up the code: both Go and especially React/CSS
+* [ ] Add a text chunk hihglighter
