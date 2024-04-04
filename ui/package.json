@@ -35,6 +35,6 @@
     "file-loader": "^6.2.0",
     "style-loader": "^3.3.3",
     "svg-inline-loader": "^0.8.2",
-    "vite": "^5.0.12"
+    "vite": "^5.0.13"
   }
 }
