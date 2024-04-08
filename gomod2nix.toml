@@ -29,8 +29,8 @@ schema = 3
     version = "v0.22.5"
     hash = "sha256-ojYDkYl6K43AewCNi6cS+dU//BwbISZ3yPZMhCoYQAs="
   [mod."github.com/gofiber/fiber/v2"]
-    version = "v2.51.0"
-    hash = "sha256-iJmo+3nbIc3ohY+1DwmZdhtMsoD2C5AUdfF6sUcx/2Q="
+    version = "v2.52.1"
+    hash = "sha256-zfsNbO0NKNRT93w03bW7pOy6TjAaAEfV8sQ/o426+EQ="
   [mod."github.com/gofiber/swagger"]
     version = "v0.1.14"
     hash = "sha256-udeNvbvbGbA1dyP2w2byovVyxZAkUTpgT20FJn3wsOM="
@@ -59,8 +59,8 @@ schema = 3
     version = "v0.0.15"
     hash = "sha256-WP39EU2UrQbByYfnwrkBDoKN7xzXsBssDq3pNryBGm0="
   [mod."github.com/milosgajdos/go-embeddings"]
-    version = "v0.1.0"
-    hash = "sha256-Lxa4LifYVu6n3saqlvUd+iW7MAV9gI0U6eFDH9JlDWY="
+    version = "v0.3.0"
+    hash = "sha256-qI3pi7QhSSfectmLSoG+HwHySrwgvvz9UNLz0g8eNwk="
   [mod."github.com/qdrant/go-client"]
     version = "v1.7.0"
     hash = "sha256-188Jj9tHCOB9GS+DIvQ46Nn8fzrDV2cvYnWqbKiSQv8="
@@ -110,11 +110,11 @@ schema = 3
     version = "v0.0.0-20230530153820-e85fd2cbaebc"
     hash = "sha256-udSELGkrQbc6rCAXol7l7wyi23hJ97tUIxyVizFHya0="
   [mod."google.golang.org/grpc"]
-    version = "v1.55.0"
-    hash = "sha256-UT1/x6XSkv1o2rJC2DI8CPvyB+nsFYUcZqtCPOdg42M="
+    version = "v1.56.3"
+    hash = "sha256-5/b/IY6uJ6OF1JJHl1RzuMXt1rOjZ+ls9mYQyh2kTl8="
   [mod."google.golang.org/protobuf"]
-    version = "v1.31.0"
-    hash = "sha256-UdIk+xRaMfdhVICvKRk1THe3R1VU+lWD8hqoW/y8jT0="
+    version = "v1.33.0"
+    hash = "sha256-cWwQjtUwSIEkAlAadrlxK1PYZXTRrV4NKzt7xDpJgIU="
   [mod."gopkg.in/yaml.v3"]
     version = "v3.0.1"
     hash = "sha256-FqL9TKYJ0XkNwJFnq9j0VvJ5ZUU1RvH/52h/f5bkYAU="
