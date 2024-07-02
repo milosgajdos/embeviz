@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/danaugrs/go-tsne/tsne v0.0.0-20220306155740-2250969e057f
-	github.com/gofiber/fiber/v2 v2.52.1
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/swagger v0.1.14
 	github.com/google/uuid v1.5.0
 	github.com/milosgajdos/go-embeddings v0.3.0
