@@ -9,6 +9,10 @@ A simple webapp for visualizing text embeddings.
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/milosgajdos/embeviz)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+Click to view the capabilities:
+
+[![Embeviz](http://img.youtube.com/vi/sDhcaB0khOI/0.jpg)](http://www.youtube.com/watch?v=sDhcaB0khOI)
+
 The app consists of two components:
 * A JSON API (written in Go, using [gofiber framework](https://docs.gofiber.io/))
 * An SPA (written in JavaScript using [ReactJS](https://react.dev/) framework with [React Router](https://reactrouter.com/en/main))
