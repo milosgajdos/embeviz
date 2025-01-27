@@ -1,6 +1,6 @@
 module github.com/milosgajdos/embeviz
 
-go 1.21
+go 1.22
 
 require (
 	github.com/danaugrs/go-tsne/tsne v0.0.0-20220306155740-2250969e057f

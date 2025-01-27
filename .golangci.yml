@@ -5,7 +5,6 @@ linters:
     - gofmt
     - revive
     - ineffassign
-    - vet
     - unused
     - misspell
     - bodyclose
@@ -15,6 +14,8 @@ linters:
 
 run:
   deadline: 2m
+
+issues:
   skip-dirs:
     - vendor
     - ui
